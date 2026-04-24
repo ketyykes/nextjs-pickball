@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# nextjs-pickball
 
-## Getting Started
+匹克球新手完全入門：規則與球拍選購一次搞懂。Next.js 16 App Router + React 19 + Tailwind v4 + shadcn/ui 打造的單頁指南。
 
-First, run the development server:
+## 技術棧
+
+- Next.js 16 (App Router)
+- React 19
+- TypeScript（strict、verbatimModuleSyntax）
+- Tailwind CSS v4 (`@tailwindcss/postcss`)
+- shadcn/ui（new-york 風格、slate base color）
+- Vitest 4 + happy-dom + @testing-library/react（單元測試）
+- Playwright（E2E，五個 browser project）
+- pnpm（套件管理）
+- OpenSpec（spec-driven TDD 治理）
+
+## 快速開始
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
+cp .env.local.example .env.local
+pnpm dev        # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 常用指令
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| 指令 | 用途 |
+| --- | --- |
+| `pnpm dev` | 啟動開發伺服器 |
+| `pnpm build` | 正式建置 |
+| `pnpm start` | 執行正式建置產物 |
+| `pnpm lint` | ESLint 檢查 |
+| `pnpm test` | Vitest watch 模式 |
+| `pnpm test:coverage` | v8 覆蓋率報告 |
+| `pnpm test:e2e` | Playwright E2E |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 專案結構
 
-## Learn More
+```
+app/              # Next.js App Router 進入點
+├── layout.tsx    # Root Layout（含 next/font/google 三家族）
+├── page.tsx      # 首頁（/）
+└── globals.css   # Tailwind + 自訂 keyframes + OKLCH 主題
 
-To learn more about Next.js, take a look at the following resources:
+components/
+├── ui/           # shadcn/ui 元件（8 個）
+└── guide/        # 指南專用元件（Hero、TocBar、11 個 Section、shared/）
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+hooks/            # 4 支 scroll/observer hooks + tests
+lib/utils.ts      # cn() = clsx + tailwind-merge
+data/guide/       # 7 個 TS 資料檔
+tests/            # Vitest setup 與 Playwright E2E
+docs/             # 設計原型（pickleball-guide.html）
+openspec/         # 規格驅動流程檔
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+legacy-react-pickball/  # 原 Vite 版本保留為對照組（驗證完成後可刪除）
+```
 
-## Deploy on Vercel
+## 開發指引
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+專案採 OpenSpec spec-driven TDD。新增功能前請參考 `openspec/specs/` 與 `CLAUDE.md`。
