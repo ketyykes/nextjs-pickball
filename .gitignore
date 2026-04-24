@@ -39,3 +39,16 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# playwright
+/playwright-report/
+/test-results/
+
+# design prototype (design reference, not source)
+docs/pickleball-guide.html
+
+# legacy reference project (kept outside source tree)
+/legacy-react-pickball/node_modules/
+/legacy-react-pickball/dist/
+/legacy-react-pickball/.vite/
+/legacy-react-pickball/*
