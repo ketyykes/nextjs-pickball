@@ -1,7 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
+node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -16,15 +16,30 @@
 # next.js
 /.next/
 /out/
+.swc/
+
+# build tools cache
+.turbo/
 
 # production
 /build
 
 # misc
 .DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
 *.pem
 
+# editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
 # debug
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -43,6 +58,8 @@ next-env.d.ts
 # playwright
 /playwright-report/
 /test-results/
+/playwright/.cache/
+/blob-report/
 
 # design prototype (design reference, not source)
 docs/pickleball-guide.html
