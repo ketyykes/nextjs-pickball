@@ -4,11 +4,11 @@ import { useGameLoop } from "./useGameLoop";
 
 describe("useGameLoop", () => {
 	it("啟用後應每 tick 呼叫 callback 並傳入 deltaMs", () => {
-		let scheduled: FrameRequestCallback | null = null;
+		const scheduled: { current: FrameRequestCallback | null } = { current: null };
 		let nowValue = 1000;
 		const now = () => nowValue;
 		const raf = vi.fn((cb: FrameRequestCallback) => {
-			scheduled = cb;
+			scheduled.current = cb;
 			return 1;
 		});
 		const cancel = vi.fn();
@@ -20,7 +20,7 @@ describe("useGameLoop", () => {
 
 		// 模擬 16ms 後第一次 tick
 		nowValue += 16;
-		scheduled?.(nowValue);
+		scheduled.current?.(nowValue);
 
 		expect(callback).toHaveBeenCalled();
 		const deltas = callback.mock.calls.map((args) => args[0] as number);

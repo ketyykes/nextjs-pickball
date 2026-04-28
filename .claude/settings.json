@@ -1,0 +1,31 @@
+{
+  "enabledPlugins": {
+    "superpowers@claude-plugins-official": true
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=$(jq -r '.tool_response.filePath // .tool_input.file_path'); case \"$FILE\" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) pnpm lint \"$FILE\" 1>&2 || exit 2 ;; esac",
+            "statusMessage": "ESLint 檢查中…"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pnpm exec tsc --noEmit 1>&2 || exit 2",
+            "timeout": 120,
+            "statusMessage": "TypeScript 型別檢查中…"
+          }
+        ]
+      }
+    ]
+  }
+}

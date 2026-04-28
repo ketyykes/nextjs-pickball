@@ -5,6 +5,4 @@ export const DEFAULT_DIFFICULTY: Difficulty = {
 	toleranceRadius: 60,
 	kitchenLandingProbability: 0.5,
 	hitTimeoutMs: 3000,
-	bouncePeakHeight: 90,
-	bounceDurationMs: 800,
 };

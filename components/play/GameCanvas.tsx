@@ -1,8 +1,8 @@
 "use client";
 
+import Matter from "matter-js";
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { useGameLoop } from "@/hooks/useGameLoop";
-import { interpolateBall } from "@/lib/play/ball";
 import { COURT_BOUNDS, KITCHEN_BOUNDS } from "@/lib/play/court";
 import { judgeHit, judgeTimeout } from "@/lib/play/judge";
 import { gameReducer, initialState } from "@/lib/play/state";
@@ -14,24 +14,36 @@ import { PauseOverlay } from "./PauseOverlay";
 import { RuleCard } from "./RuleCard";
 import { StartScreen } from "./StartScreen";
 
-interface BallShot {
-	start: Point;
-	end: Point;
-	peakHeight: number;
-	spawnedAt: number;
-	durationMs: number;
-	hasBounced: boolean;
-	bouncedAt: number | null;
-}
-
+// === 物理／視覺常數 ===
 const PADDLE_RADIUS = 28;
 const BALL_RADIUS = 10;
-// 球場視覺常數：網位於玩家側 Kitchen 上緣（y=600），玩家中線在 x=300
 const NET_Y = KITCHEN_BOUNDS.top;
 const COURT_MID_X = (COURT_BOUNDS.left + COURT_BOUNDS.right) / 2;
-// AI 側「對應 Kitchen」鏡像：以網為基準，與玩家側 Kitchen 等寬
 const AI_KITCHEN_TOP =
 	NET_Y - (KITCHEN_BOUNDS.bottom - KITCHEN_BOUNDS.top);
+// 重力（court-units / sec²），決定球落下速度
+const G_VERTICAL = 2400;
+// 垂直回彈係數（每次彈起保留的能量比例）
+const RESTITUTION = 0.55;
+// 落地後水平方向阻尼（每次彈跳保留的水平速度比例）
+const HORIZONTAL_DAMPING = 0.82;
+// 達到此次數後球停止
+const MAX_BOUNCES = 3;
+// matter-js 速度的時間基準（每 step 的位移；預設 60Hz）
+const PHYSICS_STEPS_PER_SEC = 60;
+// 飛行時間（秒）
+const FLIGHT_SEC = 1.0;
+
+interface PhysicsBall {
+	body: Matter.Body;
+	z: number;
+	vz: number;
+	hasBounced: boolean;
+	bounceCount: number;
+	spawnedAt: number;
+	endX: number;
+	endY: number;
+}
 
 export function GameCanvas() {
 	const containerRef = useRef<HTMLDivElement>(null);
@@ -41,40 +53,81 @@ export function GameCanvas() {
 	const [paused, setPaused] = useState(false);
 	const [ruleCardVisible, setRuleCardVisible] = useState(false);
 	const [bestCombo, setBestCombo] = useState(0);
-	const ballRef = useRef<BallShot | null>(null);
+	const engineRef = useRef<Matter.Engine | null>(null);
+	const ballRef = useRef<PhysicsBall | null>(null);
 	const elapsedSinceServeRef = useRef(0);
 	const elapsedSinceAwaitRef = useRef(0);
-	// 對角發球：true = AI 從左半發、落玩家右半；false = 反之。每球後切換
 	const serveFromLeftRef = useRef(true);
 
-	// === 工具：發球（對角線：AI 與落點分屬不同半場） ===
+	// === matter-js 引擎生命週期 ===
+	useEffect(() => {
+		const engine = Matter.Engine.create({
+			gravity: { x: 0, y: 0, scale: 0 }, // 2D 平面無重力（Z 由我們自己處理）
+		});
+		engineRef.current = engine;
+		return () => {
+			if (ballRef.current) {
+				Matter.Composite.remove(engine.world, ballRef.current.body);
+				ballRef.current = null;
+			}
+			Matter.Engine.clear(engine);
+			engineRef.current = null;
+		};
+	}, []);
+
+	// === 工具：發球（對角線；以真實物理計算速度） ===
 	const spawnBall = useCallback(() => {
+		const engine = engineRef.current;
+		if (!engine) return;
+		// 先移除前一顆球
+		if (ballRef.current) {
+			Matter.Composite.remove(engine.world, ballRef.current.body);
+			ballRef.current = null;
+		}
+
 		const fromLeft = serveFromLeftRef.current;
 		const isKitchenLanding =
 			Math.random() < DEFAULT_DIFFICULTY.kitchenLandingProbability;
 		const landingY = isKitchenLanding
 			? randInRange(KITCHEN_BOUNDS.top + 10, KITCHEN_BOUNDS.bottom - 10)
 			: randInRange(KITCHEN_BOUNDS.bottom + 10, COURT_BOUNDS.bottom - 30);
-		// AI 起點與落點分屬左右半，形成對角線
 		const startX = fromLeft
 			? randInRange(COURT_BOUNDS.left + 60, COURT_MID_X - 60)
 			: randInRange(COURT_MID_X + 60, COURT_BOUNDS.right - 60);
 		const landingX = fromLeft
 			? randInRange(COURT_MID_X + 20, COURT_BOUNDS.right - 30)
 			: randInRange(COURT_BOUNDS.left + 30, COURT_MID_X - 20);
+		const startY = 30;
+
+		const totalSteps = FLIGHT_SEC * PHYSICS_STEPS_PER_SEC;
+		const body = Matter.Bodies.circle(startX, startY, BALL_RADIUS, {
+			isSensor: true,
+			frictionAir: 0,
+			inertia: Number.POSITIVE_INFINITY,
+		});
+		Matter.Body.setVelocity(body, {
+			x: (landingX - startX) / totalSteps,
+			y: (landingY - startY) / totalSteps,
+		});
+		Matter.Composite.add(engine.world, body);
+
+		// 初始垂直速度：z(t) = vz0*t - 0.5*G*t²，z(FLIGHT_SEC)=0 → vz0 = 0.5*G*FLIGHT_SEC
+		const vz0 = 0.5 * G_VERTICAL * FLIGHT_SEC;
+
 		ballRef.current = {
-			start: { x: startX, y: 30 },
-			end: { x: landingX, y: landingY },
-			peakHeight: 220,
-			spawnedAt: performance.now(),
-			durationMs: 1200,
+			body,
+			z: 0,
+			vz: vz0,
 			hasBounced: false,
-			bouncedAt: null,
+			bounceCount: 0,
+			spawnedAt: performance.now(),
+			endX: landingX,
+			endY: landingY,
 		};
 		serveFromLeftRef.current = !fromLeft;
 	}, []);
 
-	// === 工具：繪製 Canvas（依 paddle 變化重新生成；ballRef 為 ref 不影響） ===
+	// === 繪製 Canvas ===
 	const drawScene = useCallback(() => {
 		const canvas = canvasRef.current;
 		if (!canvas) return;
@@ -90,16 +143,24 @@ export function GameCanvas() {
 		ctx.fillStyle = "#0e3b2e";
 		ctx.fillRect(0, 0, w, h);
 
-		// 玩家側 Kitchen 區域高亮（綠）
-		ctx.fillStyle = "rgba(163,230,53,0.22)";
-		ctx.fillRect(
-			KITCHEN_BOUNDS.left * sx,
-			KITCHEN_BOUNDS.top * sy,
-			(KITCHEN_BOUNDS.right - KITCHEN_BOUNDS.left) * sx,
-			(KITCHEN_BOUNDS.bottom - KITCHEN_BOUNDS.top) * sy,
+		// 玩家側 Kitchen 區（強化視覺：飽和黃綠 + 對角條紋）
+		const kx = KITCHEN_BOUNDS.left * sx;
+		const ky = KITCHEN_BOUNDS.top * sy;
+		const kw = (KITCHEN_BOUNDS.right - KITCHEN_BOUNDS.left) * sx;
+		const kh = (KITCHEN_BOUNDS.bottom - KITCHEN_BOUNDS.top) * sy;
+		ctx.fillStyle = "rgba(217,249,157,0.32)";
+		ctx.fillRect(kx, ky, kw, kh);
+		drawDiagonalStripes(
+			ctx,
+			kx,
+			ky,
+			kw,
+			kh,
+			"rgba(190,242,100,0.18)",
+			14 * Math.min(sx, sy),
 		);
-		// AI 側 Kitchen 鏡像（淡橘，視覺對稱）
-		ctx.fillStyle = "rgba(249,115,22,0.12)";
+		// AI 側 Kitchen 鏡像（淡橘）
+		ctx.fillStyle = "rgba(249,115,22,0.14)";
 		ctx.fillRect(
 			KITCHEN_BOUNDS.left * sx,
 			AI_KITCHEN_TOP * sy,
@@ -112,7 +173,7 @@ export function GameCanvas() {
 		ctx.lineWidth = Math.max(2, 2 * Math.min(sx, sy));
 		ctx.strokeRect(0, 0, COURT_BOUNDS.right * sx, COURT_BOUNDS.bottom * sy);
 
-		// 網（橫線）：在 NET_Y 處粗白線，營造分隔感
+		// 網（橫線）
 		ctx.strokeStyle = "rgba(255,255,255,0.85)";
 		ctx.lineWidth = Math.max(3, 3 * Math.min(sx, sy));
 		ctx.beginPath();
@@ -120,53 +181,55 @@ export function GameCanvas() {
 		ctx.lineTo(COURT_BOUNDS.right * sx, NET_Y * sy);
 		ctx.stroke();
 
-		// Kitchen 邊界線（玩家側 + AI 側）
-		ctx.strokeStyle = "rgba(255,255,255,0.55)";
-		ctx.lineWidth = Math.max(2, 2 * Math.min(sx, sy));
+		// Kitchen 邊界（玩家側用較粗的亮綠線，AI 側用一般白線）
+		ctx.strokeStyle = "rgba(190,242,100,0.85)";
+		ctx.lineWidth = Math.max(3, 3 * Math.min(sx, sy));
+		ctx.setLineDash([10 * Math.min(sx, sy), 6 * Math.min(sx, sy)]);
 		ctx.beginPath();
 		ctx.moveTo(0, KITCHEN_BOUNDS.bottom * sy);
 		ctx.lineTo(COURT_BOUNDS.right * sx, KITCHEN_BOUNDS.bottom * sy);
+		ctx.stroke();
+		ctx.setLineDash([]);
+		ctx.strokeStyle = "rgba(255,255,255,0.55)";
+		ctx.lineWidth = Math.max(2, 2 * Math.min(sx, sy));
+		ctx.beginPath();
 		ctx.moveTo(0, AI_KITCHEN_TOP * sy);
 		ctx.lineTo(COURT_BOUNDS.right * sx, AI_KITCHEN_TOP * sy);
 		ctx.stroke();
 
-		// 中線（垂直）：分左右服務區，從 baseline 到 Kitchen 線（不穿越 Kitchen）
+		// 中線（垂直，不穿越 Kitchen）
+		ctx.strokeStyle = "rgba(255,255,255,0.55)";
 		ctx.beginPath();
-		// 玩家側中線：Kitchen 下緣 → 玩家底線
 		ctx.moveTo(COURT_MID_X * sx, KITCHEN_BOUNDS.bottom * sy);
 		ctx.lineTo(COURT_MID_X * sx, COURT_BOUNDS.bottom * sy);
-		// AI 側中線：AI 底線 → AI Kitchen 上緣
 		ctx.moveTo(COURT_MID_X * sx, COURT_BOUNDS.top * sy);
 		ctx.lineTo(COURT_MID_X * sx, AI_KITCHEN_TOP * sy);
 		ctx.stroke();
 
+		// Kitchen 標籤
+		const labelSize = Math.max(14, 22 * Math.min(sx, sy));
+		ctx.fillStyle = "rgba(190,242,100,0.95)";
+		ctx.font = `bold ${labelSize}px "Outfit", sans-serif`;
+		ctx.textAlign = "center";
+		ctx.textBaseline = "middle";
+		ctx.fillText("KITCHEN", COURT_MID_X * sx, (KITCHEN_BOUNDS.top + 28) * sy);
+		ctx.fillStyle = "rgba(255,255,255,0.78)";
+		ctx.font = `${Math.max(11, 13 * Math.min(sx, sy))}px "Noto Sans TC", sans-serif`;
+		ctx.fillText(
+			"禁打高球區．須等彈跳",
+			COURT_MID_X * sx,
+			(KITCHEN_BOUNDS.top + 56) * sy,
+		);
+
 		// 球
 		const ball = ballRef.current;
 		if (ball) {
-			let pos: { x: number; y: number; height: number };
-			if (ball.hasBounced && ball.bouncedAt !== null) {
-				// 落地後：在落點原地彈跳，高度依 bouncePeakHeight 衰減
-				const elapsed = performance.now() - ball.bouncedAt;
-				const bounceT = clamp01(elapsed / DEFAULT_DIFFICULTY.bounceDurationMs);
-				const height =
-					4 *
-					DEFAULT_DIFFICULTY.bouncePeakHeight *
-					bounceT *
-					(1 - bounceT);
-				pos = { x: ball.end.x, y: ball.end.y, height };
-			} else {
-				// 空中飛行：拋物線插值
-				const t = clamp01(
-					(performance.now() - ball.spawnedAt) / ball.durationMs,
-				);
-				pos = interpolateBall(
-					ball.start,
-					ball.end,
-					ball.peakHeight,
-					t,
-				);
-			}
-			const shadowAlpha = 0.5 - Math.min(0.4, pos.height / 600);
+			const pos = {
+				x: ball.body.position.x,
+				y: ball.body.position.y,
+				height: Math.max(0, ball.z),
+			};
+			const shadowAlpha = 0.55 - Math.min(0.45, pos.height / 600);
 			// 影子
 			ctx.fillStyle = `rgba(0,0,0,${shadowAlpha})`;
 			ctx.beginPath();
@@ -250,7 +313,7 @@ export function GameCanvas() {
 		}
 	}, [state.status, spawnBall]);
 
-	// === 主迴圈 ===
+	// === 主迴圈：matter-js 引擎更新 + 自訂 Z 重力 + 多重彈跳 ===
 	const loopEnabled =
 		!paused && state.status !== "idle" && state.status !== "game_over";
 
@@ -258,17 +321,39 @@ export function GameCanvas() {
 		(dt) => {
 			elapsedSinceAwaitRef.current += dt;
 			elapsedSinceServeRef.current += dt;
-			drawScene();
-			// 球落地：t 過 1 第一次 → 標記 hasBounced 並記錄落地時刻（用於彈跳動畫）
+
+			const engine = engineRef.current;
 			const ball = ballRef.current;
-			if (ball && !ball.hasBounced) {
-				const t = (performance.now() - ball.spawnedAt) / ball.durationMs;
-				if (t >= 1) {
-					ball.hasBounced = true;
-					ball.bouncedAt = performance.now();
+			if (engine && ball) {
+				// matter-js 處理 X/Y 平面運動
+				Matter.Engine.update(engine, dt);
+
+				// 自訂 Z（高度）：真實牛頓重力
+				const dtSec = dt / 1000;
+				ball.vz -= G_VERTICAL * dtSec;
+				ball.z += ball.vz * dtSec;
+
+				if (ball.z <= 0 && ball.vz < 0) {
+					// 落地：垂直回彈、水平阻尼
+					ball.z = 0;
+					ball.vz = -ball.vz * RESTITUTION;
+					ball.bounceCount++;
+					if (!ball.hasBounced) {
+						ball.hasBounced = true;
+					}
+					Matter.Body.setVelocity(ball.body, {
+						x: ball.body.velocity.x * HORIZONTAL_DAMPING,
+						y: ball.body.velocity.y * HORIZONTAL_DAMPING,
+					});
+					if (ball.bounceCount >= MAX_BOUNCES) {
+						ball.vz = 0;
+						Matter.Body.setVelocity(ball.body, { x: 0, y: 0 });
+					}
 				}
 			}
-			// timeout 檢查
+
+			drawScene();
+
 			if (state.status === "awaiting_input") {
 				if (
 					judgeTimeout(
@@ -305,13 +390,12 @@ export function GameCanvas() {
 		if (!ball) return;
 		if (state.status !== "awaiting_input") return;
 		const result = judgeHit({
-			landingPoint: ball.end,
+			landingPoint: { x: ball.endX, y: ball.endY },
 			ballState: ball.hasBounced ? "after_bounce" : "in_air",
 			paddlePoint: point,
 			toleranceRadius: DEFAULT_DIFFICULTY.toleranceRadius,
 		});
 		dispatch({ type: "PLAYER_HIT", result });
-		// 在事件 handler（非 effect）內 setState：避免 react-hooks/set-state-in-effect
 		if (result.kind === "violation_kitchen") {
 			setRuleCardVisible(true);
 		}
@@ -352,6 +436,28 @@ function randInRange(a: number, b: number): number {
 	return a + Math.random() * (b - a);
 }
 
-function clamp01(v: number): number {
-	return v < 0 ? 0 : v > 1 ? 1 : v;
+// === Helpers ===
+function drawDiagonalStripes(
+	ctx: CanvasRenderingContext2D,
+	x: number,
+	y: number,
+	w: number,
+	h: number,
+	color: string,
+	spacing: number,
+): void {
+	ctx.save();
+	ctx.beginPath();
+	ctx.rect(x, y, w, h);
+	ctx.clip();
+	ctx.strokeStyle = color;
+	ctx.lineWidth = Math.max(1, spacing * 0.25);
+	const diag = w + h;
+	for (let i = -diag; i < diag; i += spacing) {
+		ctx.beginPath();
+		ctx.moveTo(x + i, y);
+		ctx.lineTo(x + i + h, y + h);
+		ctx.stroke();
+	}
+	ctx.restore();
 }

@@ -271,12 +271,13 @@
 - **WHEN** 列出 `components/play/` 下的 `.tsx` 檔
 - **THEN** 恰好存在 `GameCanvas.tsx`、`HUD.tsx`、`RuleCard.tsx`、`GameOverModal.tsx`、`PauseOverlay.tsx`、`StartScreen.tsx` 共 6 個檔；其中至少 `GameCanvas.tsx`、`StartScreen.tsx`、`GameOverModal.tsx`、`PauseOverlay.tsx`、`RuleCard.tsx` 五者首行為 `"use client"`
 
-### Requirement: 不引入遊戲引擎相依套件
+### Requirement: 不引入完整 2D / 3D 遊戲框架
 
-系統 SHALL NOT 在 `package.json` 新增 `phaser`、`pixi.js`、`pixi.js-legacy`、`matter-js`、`@pixi/*`、`three`、`@react-three/*` 等遊戲／物理／3D 引擎依賴。
+系統 SHALL NOT 在 `package.json` 新增 `phaser`、`pixi.js`、`pixi.js-legacy`、`@pixi/*`、`three`、`@react-three/*` 等完整 2D / 3D 遊戲渲染框架。
+系統 MAY 引入輕量 2D 物理引擎（如 `matter-js`）以提供更真實的球體運動（重力、彈跳、阻尼），渲染仍以原生 Canvas 進行。
 
-#### Scenario: package.json 不含遊戲引擎依賴
+#### Scenario: package.json 不含完整遊戲框架
 
 - **GIVEN** 完成實作
 - **WHEN** 檢查 `package.json` 的 `dependencies` 與 `devDependencies`
-- **THEN** 不存在 `phaser`、`pixi.js`、`matter-js`、`@pixi/*`、`three`、`@react-three/*` 任何一項
+- **THEN** 不存在 `phaser`、`pixi.js`、`@pixi/*`、`three`、`@react-three/*` 任何一項；`matter-js` 視物理需要可存在
