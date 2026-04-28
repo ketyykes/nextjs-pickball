@@ -19,9 +19,16 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 		case "TIMEOUT":
 			return applyResult(state, { kind: "miss" });
 		case "BALL_LANDED":
-			return state.status === "incoming"
-				? { ...state, status: "awaiting_input" }
-				: state;
+			// 從 serving / incoming / next_ball 三種狀態進入 awaiting_input。
+			// （簡化版 GameCanvas 直接 serving→awaiting_input，未經過獨立 incoming 階段）
+			if (
+				state.status === "serving" ||
+				state.status === "incoming" ||
+				state.status === "next_ball"
+			) {
+				return { ...state, status: "awaiting_input", lastResult: null };
+			}
+			return state;
 		case "PAUSE":
 		case "RESUME":
 			return state;
