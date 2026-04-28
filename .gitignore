@@ -69,3 +69,6 @@ docs/pickleball-guide.html
 /legacy-react-pickball/dist/
 /legacy-react-pickball/.vite/
 /legacy-react-pickball/*
+# user-local Claude settings (hooks etc.)
+.claude/settings.json
+.claude/settings.local.json
