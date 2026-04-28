@@ -41,4 +41,6 @@ export interface Difficulty {
 	toleranceRadius: number;
 	kitchenLandingProbability: number;
 	hitTimeoutMs: number;
+	bouncePeakHeight: number;
+	bounceDurationMs: number;
 }
