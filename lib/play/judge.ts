@@ -21,3 +21,7 @@ export function judgeHit(input: JudgeHitInput): JudgeResult {
 	}
 	return { kind: "legal" };
 }
+
+export function judgeTimeout(elapsedMs: number, timeoutMs: number): boolean {
+	return elapsedMs > timeoutMs;
+}

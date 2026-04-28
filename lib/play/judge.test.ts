@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { judgeHit } from "./judge";
+import { judgeHit, judgeTimeout } from "./judge";
 
 const baseInput = {
 	landingPoint: { x: 300, y: 720 }, // Kitchen 內
@@ -35,5 +35,15 @@ describe("judgeHit", () => {
 			ballState: "after_bounce",
 		});
 		expect(result).toEqual({ kind: "miss" });
+	});
+});
+
+describe("judgeTimeout", () => {
+	it("超過時限應視為 timeout", () => {
+		expect(judgeTimeout(3500, 3000)).toBe(true);
+	});
+
+	it("未超過時限應回傳 false", () => {
+		expect(judgeTimeout(2500, 3000)).toBe(false);
 	});
 });
