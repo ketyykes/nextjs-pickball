@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 
 interface HeroStat {
@@ -65,6 +66,16 @@ export function Hero() {
 							</div>
 						</div>
 					))}
+				</div>
+
+				<div className="mt-10 flex justify-center animate-fade-up [animation-delay:1s]">
+					<Link
+						href="/play"
+						data-testid="hero-play-link"
+						className="rounded-full bg-orange-500 px-8 py-3 font-outfit text-sm font-bold uppercase tracking-[2px] text-white shadow-lg shadow-orange-500/40 transition hover:bg-orange-400"
+					>
+						練習 Kitchen 規則
+					</Link>
 				</div>
 			</div>
 
