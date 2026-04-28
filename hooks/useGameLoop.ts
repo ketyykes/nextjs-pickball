@@ -22,7 +22,9 @@ export function useGameLoop(
 	} = options;
 
 	const callbackRef = useRef(callback);
-	callbackRef.current = callback;
+	useEffect(() => {
+		callbackRef.current = callback;
+	});
 
 	useEffect(() => {
 		if (!enabled) return;
