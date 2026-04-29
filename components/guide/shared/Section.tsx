@@ -1,7 +1,7 @@
 "use client";
 
+import { motion } from "motion/react";
 import type { ReactNode } from "react";
-import { useFadeInOnView } from "@/hooks/useFadeInOnView";
 import { cn } from "@/lib/utils";
 
 interface SectionProps {
@@ -14,19 +14,14 @@ interface SectionProps {
 
 // 共用 section 容器：scroll-triggered fade-in、錨點 id、tag + h3 標題。
 export function Section({ id, tag, title, children, className }: SectionProps) {
-	const { ref, isVisible } = useFadeInOnView<HTMLElement>();
-
 	return (
-		<section
-			ref={ref}
+		<motion.section
 			id={id}
-			className={cn(
-				"py-16 scroll-mt-[70px] transition-all duration-700 ease-out",
-				isVisible
-					? "opacity-100 translate-y-0"
-					: "opacity-0 translate-y-6",
-				className,
-			)}
+			initial={{ opacity: 0, y: 24 }}
+			whileInView={{ opacity: 1, y: 0 }}
+			viewport={{ once: true, amount: 0.1, margin: "0px 0px -40px 0px" }}
+			transition={{ duration: 0.7, ease: "easeOut" }}
+			className={cn("py-16 scroll-mt-[70px]", className)}
 		>
 			<div className="mb-8">
 				<div className="mb-1 font-outfit text-[0.7rem] font-bold uppercase tracking-[3px] text-orange-500">
@@ -39,6 +34,6 @@ export function Section({ id, tag, title, children, className }: SectionProps) {
 			<div className="space-y-5 text-base leading-[1.9] text-foreground/80 [&_strong]:font-bold [&_strong]:text-foreground">
 				{children}
 			</div>
-		</section>
+		</motion.section>
 	);
 }

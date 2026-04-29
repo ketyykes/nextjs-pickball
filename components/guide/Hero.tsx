@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronDown } from "lucide-react";
+import { motion, type Variants } from "motion/react";
 
 interface HeroStat {
 	num: string;
@@ -12,6 +13,24 @@ const heroStats: readonly HeroStat[] = [
 	{ num: "¼", label: "僅網球場 1/4 大" },
 	{ num: "11", label: "分即可拿下一局" },
 ] as const;
+
+// 父層 stagger：第一個元素延遲 0.2s 進場，後續每 0.2s 出一個。
+const heroContainerVariants: Variants = {
+	hidden: {},
+	show: {
+		transition: { staggerChildren: 0.2, delayChildren: 0.2 },
+	},
+};
+
+// 子層 fadeUp：對齊原 @keyframes fadeUp（translateY 30px、duration 0.8s、ease-out）。
+const heroItemVariants: Variants = {
+	hidden: { opacity: 0, y: 30 },
+	show: {
+		opacity: 1,
+		y: 0,
+		transition: { duration: 0.8, ease: "easeOut" },
+	},
+};
 
 // 對應原型 .hero：深藍底 + 透視場地 + 浮球 + 主標題 + 三項統計。
 export function Hero() {
@@ -41,20 +60,37 @@ export function Hero() {
 			</div>
 
 			{/* 主內容 */}
-			<div className="relative z-[2] max-w-[900px] px-8 text-center">
-				<div className="mb-8 inline-block animate-fade-up rounded-full bg-lime-400 px-6 py-2 font-outfit text-xs font-bold uppercase tracking-[3px] text-slate-900 [animation-delay:0.2s]">
+			<motion.div
+				className="relative z-[2] max-w-[900px] px-8 text-center"
+				variants={heroContainerVariants}
+				initial="hidden"
+				animate="show"
+			>
+				<motion.div
+					variants={heroItemVariants}
+					className="mb-8 inline-block rounded-full bg-lime-400 px-6 py-2 font-outfit text-xs font-bold uppercase tracking-[3px] text-slate-900"
+				>
 					2025 完全入門指南
-				</div>
+				</motion.div>
 
-				<h1 className="mb-6 animate-fade-up text-[clamp(2.4rem,6vw,4.5rem)] font-black leading-[1.2] text-white [animation-delay:0.4s]">
+				<motion.h1
+					variants={heroItemVariants}
+					className="mb-6 text-[clamp(2.4rem,6vw,4.5rem)] font-black leading-[1.2] text-white"
+				>
 					匹克球<span className="text-lime-400">新手</span>完全入門
-				</h1>
+				</motion.h1>
 
-				<p className="mx-auto mb-10 max-w-[600px] animate-fade-up text-[1.15rem] font-light text-white/70 [animation-delay:0.6s]">
+				<motion.p
+					variants={heroItemVariants}
+					className="mx-auto mb-10 max-w-[600px] text-[1.15rem] font-light text-white/70"
+				>
 					從規則到球拍選購，零基礎也能一次看懂的匹克球百科
-				</p>
+				</motion.p>
 
-				<div className="flex flex-wrap justify-center gap-12 animate-fade-up [animation-delay:0.8s] max-md:gap-6">
+				<motion.div
+					variants={heroItemVariants}
+					className="flex flex-wrap justify-center gap-12 max-md:gap-6"
+				>
 					{heroStats.map((stat) => (
 						<div key={stat.label} className="text-center">
 							<div className="font-bebas text-5xl leading-none text-lime-400 max-md:text-[2.2rem]">
@@ -65,8 +101,8 @@ export function Hero() {
 							</div>
 						</div>
 					))}
-				</div>
-			</div>
+				</motion.div>
+			</motion.div>
 
 			{/* scroll indicator */}
 			<div

@@ -107,10 +107,6 @@
   .animate-bounce-down {
     animation: bounceDown 2s ease-in-out infinite;
   }
-
-  .animate-fade-up {
-    animation: fadeUp 0.8s ease-out both;
-  }
 }
 
 @keyframes fadeIn {
@@ -161,16 +157,5 @@
   }
   50% {
     transform: translateX(-50%) translateY(10px);
-  }
-}
-
-@keyframes fadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 }

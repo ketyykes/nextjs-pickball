@@ -1,7 +1,6 @@
 "use client";
 
-import { useFadeInOnView } from "@/hooks/useFadeInOnView";
-import { cn } from "@/lib/utils";
+import { motion } from "motion/react";
 
 interface PartDividerProps {
 	num: string;
@@ -10,15 +9,13 @@ interface PartDividerProps {
 
 // 對應原型 .part-divider：大數字 + 標題 + lime 短橫，含 scroll fade-in。
 export function PartDivider({ num, title }: PartDividerProps) {
-	const { ref, isVisible } = useFadeInOnView<HTMLDivElement>();
-
 	return (
-		<div
-			ref={ref}
-			className={cn(
-				"relative px-8 py-20 text-center transition-all duration-700 ease-out",
-				isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6",
-			)}
+		<motion.div
+			initial={{ opacity: 0, y: 24 }}
+			whileInView={{ opacity: 1, y: 0 }}
+			viewport={{ once: true, amount: 0.1, margin: "0px 0px -40px 0px" }}
+			transition={{ duration: 0.7, ease: "easeOut" }}
+			className="relative px-8 py-20 text-center"
 		>
 			<div className="relative font-bebas text-[clamp(5rem,12vw,10rem)] leading-[0.9] text-border">
 				{num}
@@ -27,6 +24,6 @@ export function PartDivider({ num, title }: PartDividerProps) {
 				{title}
 			</h2>
 			<div className="mx-auto mt-6 h-1 w-16 rounded-sm bg-lime-400" />
-		</div>
+		</motion.div>
 	);
 }
