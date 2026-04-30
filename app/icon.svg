@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Pickleball">
+  <title>Pickleball</title>
+  <defs>
+    <radialGradient id="ballSurface" cx="35%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#F5FF7A" />
+      <stop offset="55%" stop-color="#D4EE3F" />
+      <stop offset="100%" stop-color="#7FA924" />
+    </radialGradient>
+  </defs>
+
+  <circle cx="50" cy="50" r="46" fill="url(#ballSurface)" stroke="#4F6A14" stroke-width="2.5" />
+
+  <g fill="#4F6A14" opacity="0.62">
+    <circle cx="50" cy="50" r="5" />
+    <circle cx="50" cy="22" r="4" />
+    <circle cx="50" cy="78" r="4" />
+    <circle cx="22" cy="50" r="4" />
+    <circle cx="78" cy="50" r="4" />
+    <circle cx="30" cy="32" r="3.5" />
+    <circle cx="70" cy="32" r="3.5" />
+    <circle cx="30" cy="68" r="3.5" />
+    <circle cx="70" cy="68" r="3.5" />
+  </g>
+
+  <ellipse cx="36" cy="28" rx="14" ry="7" fill="#FFFFFF" opacity="0.28" />
+</svg>
