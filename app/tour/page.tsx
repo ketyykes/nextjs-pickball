@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import { ScrollTimelineProvider } from "@/components/tour/shared/ScrollTimelineProvider";
-import { TourProgressRail } from "@/components/tour/TourProgressRail";
-import { TourSkipButton } from "@/components/tour/TourSkipButton";
+import { TourShell } from "@/components/tour/TourShell";
 import { CourtSizeStage } from "@/components/tour/stages/CourtSizeStage";
 import { PlayerGrowthStage } from "@/components/tour/stages/PlayerGrowthStage";
 import { TwoBounceStage } from "@/components/tour/stages/TwoBounceStage";
@@ -16,17 +14,13 @@ export const metadata: Metadata = {
 
 export default function TourPage() {
 	return (
-		<ScrollTimelineProvider>
-			<TourProgressRail />
-			<TourSkipButton />
-			<main className="h-screen snap-y snap-mandatory overflow-y-scroll bg-slate-900 text-white">
-				<CourtSizeStage />
-				<PlayerGrowthStage />
-				<TwoBounceStage />
-				<KitchenViolationStage />
-				<MaterialsSpectrumStage />
-				<ClosingStage />
-			</main>
-		</ScrollTimelineProvider>
+		<TourShell>
+			<CourtSizeStage />
+			<PlayerGrowthStage />
+			<TwoBounceStage />
+			<KitchenViolationStage />
+			<MaterialsSpectrumStage />
+			<ClosingStage />
+		</TourShell>
 	);
 }

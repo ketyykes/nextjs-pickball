@@ -106,7 +106,7 @@ describe("useStageProgress", () => {
 		expect(result.current).toBeNull();
 	});
 
-	it("scroll-timeline 支援時回傳 null", async () => {
+	it("scroll-timeline 支援時仍回 motion value（永遠走 motion path）", async () => {
 		const { useReducedMotion } = await import("@/hooks/useReducedMotion");
 		const { useScrollLinkedProgress } = await import(
 			"@/hooks/useScrollLinkedProgress"
@@ -141,7 +141,8 @@ describe("useStageProgress", () => {
 			{ wrapper },
 		);
 
-		expect(result.current).toBeNull();
+		// supported 為 true 不再短路為 null：counter 等 React 文字節點需要連續 motion value
+		expect(result.current).toEqual(fakeMotionValue);
 	});
 
 	it("既不 reduced 也不支援時回傳 motion value", async () => {

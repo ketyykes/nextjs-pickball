@@ -29,7 +29,7 @@ describe("useScrollLinkedProgress", () => {
 		expect(result.current).toBeDefined();
 		expect(useScroll).toHaveBeenCalledWith(
 			expect.objectContaining({
-				offset: ["start end", "end start"],
+				offset: ["start end", "start start"],
 			}),
 		);
 
