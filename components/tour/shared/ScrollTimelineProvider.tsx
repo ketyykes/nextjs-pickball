@@ -10,7 +10,7 @@ import {
 import type { MotionValue } from "motion/react";
 import { supportsScrollTimeline } from "@/lib/scrollTimeline";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
-import { useScrollLinkedProgress } from "@/hooks/useScrollLinkedProgress";
+import { useEnterAnimationProgress } from "@/hooks/useEnterAnimationProgress";
 
 interface ScrollTimelineContextValue {
 	readonly supported: boolean;
@@ -65,16 +65,16 @@ export function useScrollTimelineSupport(): boolean {
 	return useContext(ScrollTimelineContext).supported;
 }
 
-// 統一抽象：reduced-motion 時回 null（讓 stage 走靜態 fallback class），
-// 其餘情境回 motion value 供子元件以 useTransform 映射到視覺屬性。
-// 改採「永遠走 motion」是因為 stage 元件的計數器、SVG morph 需要連續 motion value，
-// CSS scroll-timeline 路徑無法驅動 React 文字節點變化。
+// 統一抽象：stage 進入 viewport 時觸發一次性 0→1 motion 動畫，作為 stage 內部
+// useTransform 的進度來源。reduced-motion 時回 null（stage 走靜態 fallback class）。
+// 採用「進場觸發」而非 scroll-driven 是因為 /tour 用 snap-mandatory，沒有「捲動進度」
+// 的中間態可看；進場一次性動畫直觀且每 stage snap 進入時都會播放完整動畫。
 export function useStageProgress(
 	target: RefObject<HTMLElement | null>,
 ): MotionValue<number> | null {
 	const { containerRef } = useContext(ScrollTimelineContext);
 	const reduced = useReducedMotion();
-	const progress = useScrollLinkedProgress(target, containerRef);
+	const progress = useEnterAnimationProgress(target, { root: containerRef });
 
 	if (reduced) return null;
 	return progress;

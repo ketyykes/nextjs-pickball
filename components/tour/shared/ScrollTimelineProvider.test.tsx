@@ -15,8 +15,8 @@ vi.mock("@/hooks/useReducedMotion", () => ({
 	useReducedMotion: vi.fn(),
 }));
 
-vi.mock("@/hooks/useScrollLinkedProgress", () => ({
-	useScrollLinkedProgress: vi.fn(),
+vi.mock("@/hooks/useEnterAnimationProgress", () => ({
+	useEnterAnimationProgress: vi.fn(),
 }));
 
 describe("ScrollTimelineProvider", () => {
@@ -55,13 +55,13 @@ describe("ScrollTimelineProvider", () => {
 describe("useStageProgress", () => {
 	beforeEach(async () => {
 		const { useReducedMotion } = await import("@/hooks/useReducedMotion");
-		const { useScrollLinkedProgress } = await import(
-			"@/hooks/useScrollLinkedProgress"
+		const { useEnterAnimationProgress } = await import(
+			"@/hooks/useEnterAnimationProgress"
 		);
 		const { supportsScrollTimeline } = await import("@/lib/scrollTimeline");
 		(useReducedMotion as unknown as { mockReset: () => void }).mockReset();
 		(
-			useScrollLinkedProgress as unknown as { mockReset: () => void }
+			useEnterAnimationProgress as unknown as { mockReset: () => void }
 		).mockReset();
 		(
 			supportsScrollTimeline as unknown as { mockReset: () => void }
@@ -70,8 +70,8 @@ describe("useStageProgress", () => {
 
 	it("reduced motion 啟用時回傳 null", async () => {
 		const { useReducedMotion } = await import("@/hooks/useReducedMotion");
-		const { useScrollLinkedProgress } = await import(
-			"@/hooks/useScrollLinkedProgress"
+		const { useEnterAnimationProgress } = await import(
+			"@/hooks/useEnterAnimationProgress"
 		);
 		const { supportsScrollTimeline } = await import("@/lib/scrollTimeline");
 		(
@@ -86,7 +86,7 @@ describe("useStageProgress", () => {
 		).mockReturnValue(false);
 		const fakeMotionValue = { get: () => 0 };
 		(
-			useScrollLinkedProgress as unknown as {
+			useEnterAnimationProgress as unknown as {
 				mockReturnValue: (v: unknown) => void;
 			}
 		).mockReturnValue(fakeMotionValue);
@@ -108,8 +108,8 @@ describe("useStageProgress", () => {
 
 	it("scroll-timeline 支援時仍回 motion value（永遠走 motion path）", async () => {
 		const { useReducedMotion } = await import("@/hooks/useReducedMotion");
-		const { useScrollLinkedProgress } = await import(
-			"@/hooks/useScrollLinkedProgress"
+		const { useEnterAnimationProgress } = await import(
+			"@/hooks/useEnterAnimationProgress"
 		);
 		const { supportsScrollTimeline } = await import("@/lib/scrollTimeline");
 		(
@@ -124,7 +124,7 @@ describe("useStageProgress", () => {
 		).mockReturnValue(true);
 		const fakeMotionValue = { get: () => 0 };
 		(
-			useScrollLinkedProgress as unknown as {
+			useEnterAnimationProgress as unknown as {
 				mockReturnValue: (v: unknown) => void;
 			}
 		).mockReturnValue(fakeMotionValue);
@@ -147,8 +147,8 @@ describe("useStageProgress", () => {
 
 	it("既不 reduced 也不支援時回傳 motion value", async () => {
 		const { useReducedMotion } = await import("@/hooks/useReducedMotion");
-		const { useScrollLinkedProgress } = await import(
-			"@/hooks/useScrollLinkedProgress"
+		const { useEnterAnimationProgress } = await import(
+			"@/hooks/useEnterAnimationProgress"
 		);
 		const { supportsScrollTimeline } = await import("@/lib/scrollTimeline");
 		(
@@ -163,7 +163,7 @@ describe("useStageProgress", () => {
 		).mockReturnValue(false);
 		const fakeMotionValue = { get: () => 0 };
 		(
-			useScrollLinkedProgress as unknown as {
+			useEnterAnimationProgress as unknown as {
 				mockReturnValue: (v: unknown) => void;
 			}
 		).mockReturnValue(fakeMotionValue);
