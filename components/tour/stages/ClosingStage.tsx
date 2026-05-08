@@ -7,8 +7,7 @@ import { TourStage } from "@/components/tour/TourStage";
 import { useStageProgress } from "@/components/tour/shared/ScrollTimelineProvider";
 import { Button } from "@/components/ui/button";
 
-// stage 6：收束 CTA。按鈕點擊時觸發 view transition「back」並回到 /。
-// view transition 串接於 Task 10；本 task 先 router.push('/') 即可。
+// stage 6：收束 CTA。按鈕點擊時以 nav-back transition type 觸發 view transition 反向過場並回到 /。
 export function ClosingStage() {
 	const ref = useRef<HTMLElement>(null);
 	const progress = useStageProgress(ref);
@@ -22,7 +21,7 @@ export function ClosingStage() {
 	const y = useTransform(source, [0.4, 1], [40, 0]);
 
 	const onBack = () => {
-		router.push("/");
+		router.push("/", { transitionTypes: ["nav-back"] });
 	};
 
 	return (
