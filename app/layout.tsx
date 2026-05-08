@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ViewTransition } from "react";
 import { Noto_Sans_TC, Bebas_Neue, Outfit } from "next/font/google";
 import "./globals.css";
 
@@ -39,7 +40,28 @@ export default function RootLayout({
       lang="zh-Hant"
       className={`${notoSansTc.variable} ${bebasNeue.variable} ${outfit.variable} antialiased`}
     >
-      <body>{children}</body>
+      <body>
+        {/*
+          以 React 19 <ViewTransition> 包住路由內容；
+          enter / exit 依 transition type 對應到 globals.css 的 nav-forward / nav-back 動畫。
+          其他 transition（例如初次載入、無 type 的瀏覽器返回）一律 default: "none"，避免不必要的閃動。
+        */}
+        <ViewTransition
+          enter={{
+            "nav-forward": "nav-forward",
+            "nav-back": "nav-back",
+            default: "none",
+          }}
+          exit={{
+            "nav-forward": "nav-forward",
+            "nav-back": "nav-back",
+            default: "none",
+          }}
+          default="none"
+        >
+          {children}
+        </ViewTransition>
+      </body>
     </html>
   );
 }

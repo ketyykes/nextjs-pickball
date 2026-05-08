@@ -159,3 +159,65 @@
     transform: translateX(-50%) translateY(10px);
   }
 }
+
+/*
+  / ↔ /tour 之 view transition 方向性過場：
+  - nav-forward：往 /tour 推進（內容向左滑出，新內容自右滑入）
+  - nav-back：回到 / （反向）
+  搭配 app/layout.tsx 的 <ViewTransition enter={{ "nav-forward": "nav-forward", ... }} />
+  與 router.push(href, { transitionTypes: ["nav-forward"] }) 觸發。
+*/
+::view-transition-old(.nav-forward) {
+  --slide-offset: -60px;
+  animation:
+    150ms ease-in both fade reverse,
+    400ms ease-in-out both vt-slide reverse;
+}
+::view-transition-new(.nav-forward) {
+  --slide-offset: 60px;
+  animation:
+    210ms ease-out 150ms both fade,
+    400ms ease-in-out both vt-slide;
+}
+
+::view-transition-old(.nav-back) {
+  --slide-offset: 60px;
+  animation:
+    150ms ease-in both fade reverse,
+    400ms ease-in-out both vt-slide reverse;
+}
+::view-transition-new(.nav-back) {
+  --slide-offset: -60px;
+  animation:
+    210ms ease-out 150ms both fade,
+    400ms ease-in-out both vt-slide;
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes vt-slide {
+  from {
+    translate: var(--slide-offset);
+  }
+  to {
+    translate: 0;
+  }
+}
+
+/* 尊重使用者的 reduced motion 偏好；瞬間切換內容、不做位移動畫。 */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}
+

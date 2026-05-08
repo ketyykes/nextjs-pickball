@@ -2,6 +2,7 @@
 
 import { ChevronDown } from "lucide-react";
 import { motion, type Variants } from "motion/react";
+import { HeroTourCta } from "@/components/guide/HeroTourCta";
 
 interface HeroStat {
 	num: string;
@@ -14,25 +15,27 @@ const heroStats: readonly HeroStat[] = [
 	{ num: "11", label: "分即可拿下一局" },
 ] as const;
 
-// 父層 stagger：第一個元素延遲 0.2s 進場，後續每 0.2s 出一個。
+// 父層 stagger：整體於 0.6s 內依序帶出 5 個 items（badge / 主標題 / 副標 / 統計 / CTA）。
 const heroContainerVariants: Variants = {
 	hidden: {},
 	show: {
-		transition: { staggerChildren: 0.2, delayChildren: 0.2 },
+		transition: { staggerChildren: 0.08, delayChildren: 0.05 },
 	},
 };
 
-// 子層 fadeUp：對齊原 @keyframes fadeUp（translateY 30px、duration 0.8s、ease-out）。
+// 子層 fadeUp：縮短 duration 至 0.4s 並降低 translateY 距離以維持輕快觀感。
 const heroItemVariants: Variants = {
-	hidden: { opacity: 0, y: 30 },
+	hidden: { opacity: 0, y: 20 },
 	show: {
 		opacity: 1,
 		y: 0,
-		transition: { duration: 0.8, ease: "easeOut" },
+		transition: { duration: 0.4, ease: "easeOut" },
 	},
 };
 
-// 對應原型 .hero：深藍底 + 透視場地 + 浮球 + 主標題 + 三項統計。
+// Hero：以 staggerChildren 在頁面載入後一次帶出全部內容（含 CTA）。
+// 取消 scroll-driven 控制 opacity 的設計——scroll 進入區間和 CTA 在視窗中的時機難以匹配，
+// 改成 CTA 永遠可見、捲動只走自然版面流動。
 export function Hero() {
 	return (
 		<section className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-900">
@@ -88,8 +91,8 @@ export function Hero() {
 				</motion.p>
 
 				<motion.div
+					className="mb-10 flex flex-wrap justify-center gap-12 max-md:gap-6"
 					variants={heroItemVariants}
-					className="flex flex-wrap justify-center gap-12 max-md:gap-6"
 				>
 					{heroStats.map((stat) => (
 						<div key={stat.label} className="text-center">
@@ -101,6 +104,10 @@ export function Hero() {
 							</div>
 						</div>
 					))}
+				</motion.div>
+
+				<motion.div variants={heroItemVariants}>
+					<HeroTourCta />
 				</motion.div>
 			</motion.div>
 
