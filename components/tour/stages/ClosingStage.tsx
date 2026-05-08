@@ -14,7 +14,9 @@ export function ClosingStage() {
 	const progress = useStageProgress(ref);
 	const router = useRouter();
 
-	const fallback = useMotionValue(0);
+	// fallback 設動畫終點 (1)：reduced-motion 直接看到球員敬禮姿勢 + 標題 + CTA
+	// （否則 progress=null 時 source=0、CTA opacity=0，使用者完全看不到「回到完整指南」按鈕）
+	const fallback = useMotionValue(1);
 	const source = progress ?? fallback;
 
 	// 球拍角度：揮拍中段（向下偏前 60°）→ 中段 30° → 收拍敬禮（拍頭朝上 -30°）

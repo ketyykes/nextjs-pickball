@@ -10,8 +10,8 @@ export function TwoBounceStage() {
 	const ref = useRef<HTMLElement>(null);
 	const progress = useStageProgress(ref);
 
-	// fallback motion value 讓 useTransform 永遠拿到合法 MotionValue。
-	const fallback = useMotionValue(0);
+	// fallback 設動畫終點 (1)：reduced-motion 直接看到球軌跡虛線與球的最終位置
+	const fallback = useMotionValue(1);
 	const source = progress ?? fallback;
 
 	const ballX = useTransform(source, [0, 0.25, 0.5, 0.75, 1], [60, 200, 340, 480, 540]);

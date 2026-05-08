@@ -53,7 +53,8 @@ export function MaterialsSpectrumStage() {
 	const ref = useRef<HTMLElement>(null);
 	const progress = useStageProgress(ref);
 
-	const fallback = useMotionValue(0);
+	// fallback 設動畫終點 (1)：reduced-motion 直接看到三張卡片完整呈現
+	const fallback = useMotionValue(1);
 	const source = progress ?? fallback;
 
 	return (

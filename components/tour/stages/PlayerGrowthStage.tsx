@@ -44,7 +44,8 @@ export function PlayerGrowthStage() {
 	const ref = useRef<HTMLElement>(null);
 	const progress = useStageProgress(ref);
 
-	const fallback = useMotionValue(0);
+	// fallback 設動畫終點 (1)：reduced-motion 直接看到完整折線與 14 個小人
+	const fallback = useMotionValue(1);
 	const source = progress ?? fallback;
 
 	const maxPlayers = playerGrowth.at(-1)?.players ?? 1;

@@ -16,10 +16,11 @@ export function CourtSizeStage() {
 	const ref = useRef<HTMLElement>(null);
 	const progress = useStageProgress(ref);
 
-	const fallback = useMotionValue(0);
+	// fallback 設為動畫終點 (1) 而非起點 (0)，讓 reduced-motion 使用者直接看到
+	// 動畫終點狀態（counter=81、匹克球場 opacity=1）而非空白起點
+	const fallback = useMotionValue(1);
 	const source = progress ?? fallback;
 
-	// 計數器無論哪條 path 都用 motion，讓 260→81 動畫在 Chrome 也能看到
 	const counter = useTransform(source, [0, 1], [260, 81]);
 	const pickleOpacity = useTransform(source, [0.3, 1], [0, 1]);
 
@@ -35,11 +36,7 @@ export function CourtSizeStage() {
 						{/* 網球場（大，lime 綠） */}
 						<svg
 							viewBox="0 0 600 300"
-							className={
-								progress
-									? "absolute inset-0"
-									: "absolute inset-0 animate-stage-fade animation-timeline-view animation-range-cover"
-							}
+							className="absolute inset-0"
 						>
 							<rect x="20" y="20" width="560" height="260" fill="none" stroke="#a3e635" strokeWidth="3" />
 							<line x1="300" y1="20" x2="300" y2="280" stroke="#a3e635" strokeWidth="2" />

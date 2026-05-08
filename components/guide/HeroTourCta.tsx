@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
 // Hero 末段的 CTA 按鈕：點擊觸發「nav-forward」view transition 並導向 /tour。
-// 進場由父層 Hero 的 scroll-driven motion 控制 opacity/y（不再帶獨立 section 樣式）。
+// 進場由父層 Hero 的 staggerChildren 變體帶出，CTA 載入後永遠可見、可點。
 export function HeroTourCta() {
 	const router = useRouter();
 

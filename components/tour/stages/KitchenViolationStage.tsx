@@ -24,7 +24,8 @@ export function KitchenViolationStage() {
 	const ref = useRef<HTMLElement>(null);
 	const progress = useStageProgress(ref);
 
-	const fallback = useMotionValue(0);
+	// fallback 設動畫終點 (1)：reduced-motion 直接看到紅區+腳印+球+紅閃+✕ 警示終點狀態
+	const fallback = useMotionValue(1);
 	const source = progress ?? fallback;
 
 	const kitchenOpacity = useTransform(source, [0, 0.35], [0, 0.85]);
