@@ -65,14 +65,20 @@ export function CourtSizeStage() {
 						</motion.svg>
 					</div>
 
-					{/* 計數器永遠走 motion，顯示 260→81 的動態變化 */}
-					<div className="flex items-center gap-3 font-bebas text-4xl">
-						<span className="text-white/50">網球場</span>
-						<span className="text-white/40 text-2xl">260 ㎡</span>
-						<span className="text-white/40">→</span>
-						<span className="text-white/50">匹克球場</span>
-						<Counter value={counter} />
-						<span className="text-base text-white/60">㎡</span>
+					{/* 計數器永遠走 motion，顯示 260→81 的動態變化；mobile 折兩行避免擠擠到 Skip 按鈕 */}
+					<div className="flex items-center gap-3 font-bebas text-4xl max-md:flex-col max-md:gap-1 max-md:text-3xl">
+						<span className="flex items-baseline gap-2">
+							<span className="text-white/50">網球場</span>
+							<span className="text-2xl text-white/40 max-md:text-xl">
+								260 ㎡
+							</span>
+						</span>
+						<span className="text-white/40 max-md:rotate-90">→</span>
+						<span className="flex items-baseline gap-2">
+							<span className="text-white/50">匹克球場</span>
+							<Counter value={counter} />
+							<span className="text-base text-white/60">㎡</span>
+						</span>
 					</div>
 				</div>
 			</div>

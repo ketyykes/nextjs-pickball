@@ -34,12 +34,17 @@ function CardItem({ card, source, index }: CardItemProps) {
 	return (
 		<motion.div
 			style={{ opacity, y, borderColor: card.color }}
-			className="flex h-[280px] flex-col items-center justify-center gap-4 rounded-2xl border-2 bg-slate-800 p-8"
+			className="flex h-[280px] flex-col items-center justify-center gap-4 rounded-2xl border-2 bg-slate-800 p-8 max-md:h-[120px] max-md:gap-2 max-md:p-4"
 		>
-			<div className="font-bebas text-5xl" style={{ color: card.color }}>
+			<div
+				className="font-bebas text-5xl max-md:text-3xl"
+				style={{ color: card.color }}
+			>
 				{card.name}
 			</div>
-			<div className="text-center text-sm text-white/70">{card.desc}</div>
+			<div className="text-center text-sm text-white/70 max-md:text-xs">
+				{card.desc}
+			</div>
 		</motion.div>
 	);
 }
@@ -53,12 +58,12 @@ export function MaterialsSpectrumStage() {
 
 	return (
 		<TourStage id="materials-spectrum" ariaLabel="球拍材質光譜" stageRef={ref}>
-			<div className="flex h-full w-full flex-col items-center justify-center gap-12 bg-slate-900 px-8 text-white">
+			<div className="flex h-full w-full flex-col items-center justify-center gap-12 bg-slate-900 px-8 text-white max-md:gap-6">
 				<h2 className="text-center text-[clamp(2rem,5vw,4rem)] font-black">
 					球拍<span className="text-lime-400">材質光譜</span>
 				</h2>
 
-				<div className="grid w-full max-w-[1100px] grid-cols-3 gap-6 max-md:grid-cols-1 max-md:gap-4">
+				<div className="grid w-full max-w-[1100px] grid-cols-3 gap-6 max-md:grid-cols-1 max-md:gap-3">
 					{cards.map((card, i) => (
 						<CardItem key={card.id} card={card} source={source} index={i} />
 					))}

@@ -9,11 +9,11 @@ import { useStageProgress } from "@/components/tour/shared/ScrollTimelineProvide
 function Foot({ x, y }: { x: number; y: number }) {
 	return (
 		<g transform={`translate(${x} ${y})`}>
-			<ellipse cx="0" cy="0" rx="5" ry="9" fill="white" />
-			<circle cx="-3.2" cy="-9" r="1.5" fill="white" />
-			<circle cx="-0.8" cy="-11" r="1.8" fill="white" />
-			<circle cx="1.6" cy="-11" r="1.6" fill="white" />
-			<circle cx="3.6" cy="-9.5" r="1.3" fill="white" />
+			<ellipse cx="0" cy="0" rx="8" ry="14" fill="white" />
+			<circle cx="-5" cy="-14" r="2.4" fill="white" />
+			<circle cx="-1.5" cy="-17" r="2.8" fill="white" />
+			<circle cx="2.5" cy="-17" r="2.6" fill="white" />
+			<circle cx="5.5" cy="-15" r="2.2" fill="white" />
 		</g>
 	);
 }
@@ -145,7 +145,7 @@ export function KitchenViolationStage() {
 
 						{/* 球從球網對面（上方）飛入（lime 綠色） */}
 						<motion.circle
-							cx="200"
+							cx="140"
 							r="6"
 							fill="#a3e635"
 							style={{ opacity: ballOpacity, cy: ballCy }}
@@ -153,8 +153,8 @@ export function KitchenViolationStage() {
 
 						{/* 腳印（兩個腳掌站在廚房內、球網下方） */}
 						<motion.g style={{ opacity: feetOpacity }}>
-							<Foot x={185} y={235} />
-							<Foot x={215} y={235} />
+							<Foot x={130} y={245} />
+							<Foot x={150} y={245} />
 						</motion.g>
 
 						{/* 紅閃覆蓋整個廚房 */}
@@ -167,24 +167,24 @@ export function KitchenViolationStage() {
 							style={{ opacity: flashOpacity }}
 						/>
 
-						{/* 截擊瞬間的 ✕ 警示符號 */}
+						{/* 截擊瞬間的 ✕ 警示符號（位於球落下處） */}
 						<motion.g style={{ opacity: xOpacity }}>
 							<line
-								x1="188"
-								y1="218"
-								x2="212"
-								y2="242"
+								x1="125"
+								y1="200"
+								x2="155"
+								y2="230"
 								stroke="white"
-								strokeWidth="3.5"
+								strokeWidth="4"
 								strokeLinecap="round"
 							/>
 							<line
-								x1="212"
-								y1="218"
-								x2="188"
-								y2="242"
+								x1="155"
+								y1="200"
+								x2="125"
+								y2="230"
 								stroke="white"
-								strokeWidth="3.5"
+								strokeWidth="4"
 								strokeLinecap="round"
 							/>
 						</motion.g>
