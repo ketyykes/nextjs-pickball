@@ -1,11 +1,16 @@
 # tour-experience Specification
 
 ## Purpose
-TBD - created by archiving change add-tour-experience. Update Purpose after archive.
-## Requirements
-### Requirement: `/tour` 路由提供 6 段 scroll-driven 體驗
 
-系統 SHALL 在 `/tour` 路由依序渲染 6 個 stage：CourtSize、PlayerGrowth、TwoBounce、KitchenViolation、MaterialsSpectrum、Closing。每個 stage SHALL 為 100vh 高度的 scroll container，並套用 `scroll-snap-align: start` 強制停靠；外層 SHALL 套用 `scroll-snap-type: y mandatory`。
+定義 `/tour` 互動體驗路由：6 段 100vh stage 的 scroll-snap 沉浸式介紹，每段在使用者進入 viewport 時觸發一次性進場動畫，搭配 `/` ↔ `/tour` 之 React 19 `<ViewTransition>` 方向性過場。本 capability 也包含 `/` 首頁的「進入完整體驗 →」CTA、`prefers-reduced-motion` 全域降級，以及配合 stage 動畫所需的 helper hook 與資料模組。
+
+> **實作注意**：原始 design doc（`docs/superpowers/specs/2026-05-08-scroll-driven-tour-design.md`）規劃為「CSS scroll-timeline + motion useScroll fallback」雙路徑、Hero scroll-driven 升級。實作期間因 hydration mismatch、snap-mandatory 下無捲動進度中間態等實際限制，已調整為「IntersectionObserver 進場動畫」單一路徑、Hero 改為 staggerChildren 直接全部載入。詳見 design doc 末尾 Implementation Changelog。
+
+## Requirements
+
+### Requirement: `/tour` 路由提供 6 段 scroll-snap 體驗
+
+系統 SHALL 在 `/tour` 路由依序渲染 6 個 stage：CourtSize、PlayerGrowth、TwoBounce、KitchenViolation、MaterialsSpectrum、Closing。每個 stage SHALL 為 100vh 高度的 scroll container，並套用 `scroll-snap-align: start` 強制停靠；外層 main element SHALL 套用 `scroll-snap-type: y mandatory` 與 `overflow-y-scroll`，作為內部 scroll container。
 
 #### Scenario: 訪問 `/tour` 可見第一個 stage 標題
 
@@ -30,15 +35,15 @@ TBD - created by archiving change add-tour-experience. Update Purpose after arch
 - **WHEN** 執行 `pnpm test:e2e -- tests/e2e/specs/tour.spec.ts`
 - **THEN** 上述三條情境之 Playwright 測試案例全數通過
 
-### Requirement: 雙路徑 scroll-driven 動畫策略
+### Requirement: Stage 進場動畫由 IntersectionObserver 觸發
 
-系統 SHALL 提供 `lib/scrollTimeline.ts` 之 `supportsScrollTimeline()` 函式偵測 CSS scroll-timeline 支援；偵測同時 `CSS.supports('animation-timeline: scroll()')` 與 `CSS.supports('animation-range: entry 0% exit 100%')` 兩條件，皆為 true 時 SHALL 回傳 true，否則回傳 false。當 `CSS` 物件不存在（非瀏覽器環境）時 SHALL 回傳 false。
+系統 SHALL 提供 `hooks/useEnterAnimationProgress.ts`：以 `IntersectionObserver`（root 接受可選 RefObject，預設為 viewport）監聽目標元素，當 `intersectionRatio >= amount`（預設 0.5）時將 `motion useMotionValue` 從 0 動畫到 1（預設 duration 1.5s、ease easeOut）；`once=true`（預設）時觸發後立即 disconnect observer。
 
-`<ScrollTimelineProvider>` SHALL 於初次掛載時呼叫一次該函式，並透過 React context 將結果向下傳遞；子元件 SHALL 透過 `useScrollTimelineSupport()` 讀取，不得自行重新偵測。
+`hooks/useStageProgress.ts`（位於 `components/tour/shared/ScrollTimelineProvider.tsx`）SHALL 整合 `useReducedMotion()` 與 `useEnterAnimationProgress(target, { root: containerRef })`：當 `useReducedMotion()` 為 true 時 SHALL 回傳 `null`（stage 元件走靜態 fallback class）；其餘情境 SHALL 回傳由 IntersectionObserver 驅動的 `MotionValue<number>`，stage 元件以 `useTransform` 將進度映射到 opacity / scale / x / y 等視覺屬性。
 
-`hooks/useScrollLinkedProgress.ts` SHALL 包裝 motion `useScroll`，接受 ref，預設 `offset: ["start end", "end start"]`，回傳 `MotionValue<number>`；元件卸載時 SHALL 取消訂閱。
+`<ScrollTimelineProvider>` SHALL 接受可選 `containerRef` prop（內部 scroll container 的 ref），透過 React context 傳遞給 `useStageProgress`，使 IntersectionObserver 能以該 container 為 root 正確偵測 stage 進入。
 
-`hooks/useStageProgress.ts`（或同等抽象）SHALL 在 scroll-timeline 支援為 true 時回傳 `null`、為 false 時回傳 `useScrollLinkedProgress(ref)`，讓 stage 元件依此分支渲染 CSS 驅動或 motion 驅動的版本。
+> Stage 元件原本依賴 CSS scroll-timeline 偵測雙路徑分支（`useScrollTimelineSupport`），目前實作仍保留偵測結果於 context 中，但 `useStageProgress` 不再依此分支——所有 stage 統一走 IntersectionObserver 進場動畫；CSS scroll-timeline 偵測結果 RFA（保留供將來擴充使用）。
 
 #### Scenario: scroll-timeline 偵測在支援環境回傳 true
 
@@ -61,11 +66,25 @@ TBD - created by archiving change add-tour-experience. Update Purpose after arch
 - **THEN** 回傳 false 且不拋例外
 - **TEST** `lib/scrollTimeline.test.ts` 中 `it('在 CSS 物件不存在時回傳 false 不拋例外')`
 
+#### Scenario: useEnterAnimationProgress 元素進入 viewport 後啟動 0→1 motion 動畫
+
+- **GIVEN** 元件以 ref 呼叫 `useEnterAnimationProgress(ref)` 並掛載至已連接 DOM 的元素
+- **WHEN** IntersectionObserver callback 收到 `isIntersecting && intersectionRatio >= amount`
+- **THEN** motion `animate` 被呼叫，將回傳之 `MotionValue<number>` 從 0 跑到 1
+- **TEST** `hooks/useEnterAnimationProgress.test.ts` 中 `it('元素進入 viewport 後啟動 0→1 motion 動畫')`
+
+#### Scenario: useEnterAnimationProgress 卸載時 disconnect observer
+
+- **GIVEN** 元件已掛載 `useEnterAnimationProgress(ref)`
+- **WHEN** 元件卸載
+- **THEN** 內部 IntersectionObserver 被 disconnect，無 leak
+- **TEST** `hooks/useEnterAnimationProgress.test.ts` 中 `it('卸載時 disconnect observer')`
+
 #### Scenario: useScrollLinkedProgress 回傳 motion value 並於卸載時 unsubscribe
 
-- **GIVEN** 元件以 ref 呼叫 `useScrollLinkedProgress(ref)`
+- **GIVEN** 元件以 ref 呼叫 `useScrollLinkedProgress(ref)`（保留供將來 scroll-driven 場景使用）
 - **WHEN** 元件渲染完成
-- **THEN** hook 回傳之 `MotionValue<number>` 可被讀取
+- **THEN** hook 回傳之 `MotionValue<number>` 可被讀取，預設 offset 為 `["start end", "start start"]`
 - **AND WHEN** 元件卸載
 - **THEN** 內部訂閱被取消，無 memory leak
 - **TEST** `hooks/useScrollLinkedProgress.test.ts` 中 `it('回傳 motion value 並於卸載時 unsubscribe')`
@@ -74,9 +93,7 @@ TBD - created by archiving change add-tour-experience. Update Purpose after arch
 
 系統 SHALL 提供 `hooks/useReducedMotion.ts`：監聽 `(prefers-reduced-motion: reduce)` media query，回傳目前值；media query 變動時 SHALL 觸發 React 重新渲染；元件卸載時 SHALL 移除事件監聽。
 
-當 `useReducedMotion()` 為 true 時，所有 stage 元件 SHALL NOT 套用 scroll-timeline class、且 `useStageProgress` SHALL 回 `null`，實際呈現為靜態定格內容。`scroll-snap` 與 progress rail SHALL 保留以利使用者控制節奏與感知位置。
-
-Hero 元件在 `useReducedMotion()` 為 true 時 SHALL 退化為既有 motion `staggerChildren` 入場行為（不啟動 scroll-driven 邏輯），確保既有 `pickleball-guide-page` 規格行為向下相容。
+當 `useReducedMotion()` 為 true 時，`useStageProgress` SHALL 回傳 `null`；stage 元件 SHALL 走靜態 fallback class（保留 `animate-stage-fade animation-timeline-view animation-range-cover` 等 utility 作為非 motion 的 CSS-only fallback），不啟動 motion 進場動畫。`scroll-snap` 與 progress rail SHALL 保留以利使用者控制節奏與感知位置。
 
 #### Scenario: useReducedMotion 在 reduce 設定時回 true
 
@@ -105,29 +122,33 @@ Hero 元件在 `useReducedMotion()` 為 true 時 SHALL 退化為既有 motion `s
 - **WHEN** 使用者開啟 `/tour` 並捲動
 - **THEN** 6 個 stage 之內容文字皆可讀取，scroll-snap 仍生效，progress rail 仍正常更新
 
-### Requirement: Hero 升級為 scroll-driven 並保留向下相容
+### Requirement: Hero 入場動畫直接顯示全部內容
 
-系統 SHALL 將 `components/guide/Hero.tsx` 升級為 scroll-driven：當 `useReducedMotion()` 為 false 且 `useScrollTimelineSupport()` 為 true 時，Hero 之主標題、透視場地、統計區、CTA SHALL 依 0–100vh 之 scroll 進度推進顯示；當 scroll-timeline 不支援時，SHALL 改用 `useScrollLinkedProgress` 之 motion 進度驅動同樣視覺；當 `useReducedMotion()` 為 true 時，SHALL 退化為既有 motion `staggerChildren` 入場行為。
+系統 SHALL 在 `components/guide/Hero.tsx` 以 motion `staggerChildren` 變體於頁面載入時依序帶出全部內容（badge / 主標題 / 副標 / 三項統計 / CTA），不依賴 scroll 進度控制顯示時機。所有元素 SHALL 於頁面載入後 1 秒內全部進場完成、永遠可見。
 
-新增之 scroll-driven 行為 SHALL NOT 違反既有 `pickleball-guide-page` 規格之 Hero 既有要求（badge、主標題、三項統計仍須於頁面載入後可見）。
+新增之入場動畫 SHALL NOT 違反既有 `pickleball-guide-page` 規格之 Hero 既有要求（badge、主標題、三項統計仍須於頁面載入後可見）。
 
-#### Scenario: 一般環境下 Hero 出現 scroll-driven CTA
+> 原 design 規劃 Hero 為 scroll-driven（progress 約 90% 浮現 CTA），實作期間因 motion `useScroll` 在內部 scroll container 的 progress 計算與 CTA 在 viewport 中的時機難以對齊（CTA 永遠看不到），已簡化為直接 staggerChildren 全部載入。詳見 design doc 末尾 Implementation Changelog 第 3 項。
 
-- **GIVEN** 使用者瀏覽器支援 scroll-timeline 且 `prefers-reduced-motion` 未啟用
-- **WHEN** 使用者捲動至 Hero scroll 進度約 90%
-- **THEN** 「進入完整體驗 →」CTA 按鈕浮現於 Hero 末段
+#### Scenario: 載入 `/` 後 Hero 全部內容可見
+
+- **GIVEN** 使用者開啟 `/`
+- **WHEN** 頁面載入完成、stagger 入場動畫播完（約 1 秒內）
+- **THEN** 視窗內可見 badge「2025 完全入門指南」、主標題「匹克球新手完全入門」、副標、三項統計、與「進入完整體驗 →」CTA
 
 #### Scenario: reduced motion 下 Hero 行為向下相容
 
 - **GIVEN** 使用者瀏覽器 `prefers-reduced-motion: reduce` 啟用
 - **WHEN** 使用者開啟 `/`
-- **THEN** Hero 顯示 badge、主標題與三項統計（與既有 `pickleball-guide-page` 規格一致），不啟動 scroll-driven 邏輯
+- **THEN** Hero 顯示 badge、主標題與三項統計（與既有 `pickleball-guide-page` 規格一致）
 
 ### Requirement: 首頁 CTA 串接並觸發方向性過場
 
-系統 SHALL 於 `app/page.tsx` 的 Hero 結束位置（TocBar 之前）渲染「進入完整體驗 →」按鈕；按鈕點擊 SHALL 呼叫 `router.push('/tour', { transitionTypes: ['nav-forward'] })` 並導航至 `/tour`（Next.js 16 router 內部會於 view transition 期間呼叫 React 的 `addTransitionType`）。`/tour` 內之 ClosingStage「回到完整指南」按鈕與 `TourSkipButton` 點擊 SHALL 呼叫 `router.push(href, { transitionTypes: ['nav-back'] })` 並導航回 `/`（Skip 目標為 `/#court`，額外 scroll 至 `#court`）。
+系統 SHALL 於 `components/guide/Hero.tsx` 內部主內容區塊末段（三項統計之後）渲染「進入完整體驗 →」按鈕（`HeroTourCta` 元件）；按鈕點擊 SHALL 呼叫 `router.push('/tour', { transitionTypes: ['nav-forward'] })` 並導航至 `/tour`（Next.js 16 router 內部會於 view transition 期間呼叫 React 的 `addTransitionType`）。
 
-`app/layout.tsx` 之主內容 SHALL 由 React 19 `<ViewTransition>` 包覆，透過 CSS 對 `nav-forward` 與 `nav-back` 兩 transition type 套用不同方向滑入動畫。
+`/tour` 內之 ClosingStage「回到完整指南」按鈕與 `TourSkipButton` 點擊 SHALL 呼叫 `router.push(href, { transitionTypes: ['nav-back'] })` 並導航回 `/`（Skip 目標為 `/#court`，額外 scroll 至 `#court`）。
+
+`app/layout.tsx` 之主內容 SHALL 由 React 19 `<ViewTransition>` 包覆，透過 CSS 對 `nav-forward` 與 `nav-back` 兩 transition type 套用不同方向滑入動畫。專案 SHALL 於 `next.config.ts` 啟用 `experimental.viewTransition: true`。
 
 #### Scenario: 首頁 CTA 點擊後導向 `/tour`
 
@@ -167,4 +188,3 @@ Hero 元件在 `useReducedMotion()` 為 true 時 SHALL 退化為既有 motion `s
 - **WHEN** 執行對應 Vitest
 - **THEN** 匯出之常數為 readonly array、長度 ≥ 6、年份從 2020 起遞增不重複、`players` 數值遞增
 - **TEST** `data/tour/playerGrowth.test.ts` 中 `it('提供至少 6 筆年度資料且年份與人數均遞增')`
-

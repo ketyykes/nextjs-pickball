@@ -1958,3 +1958,22 @@ git push -u origin feature/scroll-driven-tour
 ## Plan Status
 
 Plan complete and saved to `docs/superpowers/plans/2026-05-08-scroll-driven-tour.md`.
+
+---
+
+## Implementation Changelog（plan 與實作偏離之摘要）
+
+本 plan 為實作起點時的逐步 task 文件。實作期間因技術限制（hydration、snap 與 scroll-driven 衝突、motion API 邊角案例）與設計取捨，多處與 plan 範本不同；詳細偏離原因請參照 design doc `docs/superpowers/specs/2026-05-08-scroll-driven-tour-design.md` § 9 Implementation Changelog。本 plan 中已知重要偏離摘要：
+
+- **Task 5 (`useStageProgress`)**：plan 範本依 `useScrollTimelineSupport` 三分支；實作改為僅以 `useReducedMotion` 判斷、永遠走 motion path（IntersectionObserver 觸發），詳見 design doc § 9.1
+- **Task 7 (6 個 stage)**：
+  - Stage 4 標題從「腳一進去就犯規」改為「絕對不能截擊」（§ 9.4）
+  - Stage 5 從水平 pin 推移改為 grid 並列 stagger（§ 9.5）
+  - Stage 2 / 3 motion `pathLength` 改用 opacity fade-in（§ 9.6）
+  - 補上 Stage 2 右側 14 個小人 + Stage 6 球員 SVG（§ 9.9）
+- **Task 12 (Hero scroll-driven)**：移除 scroll-driven 整套，改回 staggerChildren 直接全部載入；CTA 內嵌於 Hero 主內容末段而非 TocBar 之前（§ 9.3）
+- **共用 hooks**：`useScrollLinkedProgress` 預設 offset 從 `["start end", "end start"]` 改為 `["start end", "start start"]`（§ 9.2，但本 hook 因 § 9.1 已不被 stage 元件使用）
+- **新增 `useEnterAnimationProgress` hook + `TourShell` 元件**（plan 未列）：對應 § 9.1 設計變更，stage 元件透過 `useStageProgress` → `useEnterAnimationProgress` 取得進度；`TourShell` 持有 main scroll container 的 ref 提供給 IntersectionObserver
+- **`ScrollTimelineProvider`**：改用 `useSyncExternalStore` 解 hydration mismatch（§ 9.7）
+
+OpenSpec main spec `openspec/specs/tour-experience/spec.md` 已對齊上述實作後狀態，archived change 內 plan / spec 維持為歷史快照。

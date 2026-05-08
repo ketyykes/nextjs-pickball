@@ -297,3 +297,73 @@ return progress
 - **既有 Hero 測試不可破壞**：Hero 既有 `staggerChildren` 行為作為 reduced-motion fallback 保留，
   scroll-timeline 增量加入。改造後既有 E2E（如有）需通過。
 - 所有動畫只用 `transform` 與 `opacity`，不引入 layout-affecting 屬性。
+
+## 9. Implementation Changelog（實作後對齊）
+
+本節記錄實作期間因技術限制或實際使用體驗而對原設計的偏離。本檔以上各節保留為設計時間點快照，
+真實的 capability 描述以 `openspec/specs/tour-experience/spec.md` 為準。
+
+### 9.1 Stage 動畫機制：scroll-driven → IntersectionObserver 一次性進場
+
+- **原設計**（§4）：CSS scroll-timeline（路徑 A） + motion `useScroll` fallback（路徑 B），由 stage 內 `useStageProgress(ref)` 統一抽象
+- **實作**：`useEnterAnimationProgress` hook，元素進入 viewport 時用 `IntersectionObserver` 觸發 motion `animate(progress, 1, ...)` 一次性 0→1 動畫
+- **原因**：
+  - `/tour` 用 `snap-mandatory`，使用者只能停在每個 stage 的 snap 起點，沒有「捲動進度中間態」可看，scroll-driven 動畫使用者實際看不到中間值
+  - motion `useScroll` 在 main 內部 scroll container 雖可讀進度，但 stage 1 一進入頁面就在 snap 終點（progress=1）、動畫已完成，counter 直接顯示 81（看不到 260→81 的跑數效果）
+  - 改 IntersectionObserver 後每次 snap 進入新 stage 都會重頭播放完整動畫，視覺敘事更直觀
+- **影響**：`useStageProgress` 不再依 `useScrollTimelineSupport()` 分支；CSS scroll-timeline 偵測（`supportsScrollTimeline`）、`useScrollLinkedProgress`、`stage-fade` / `stage-pin` keyframes 與 `animation-timeline-view` / `animation-range-cover` utility 仍存在於 codebase（測試保留），但不被 stage 元件使用
+
+### 9.2 `useScrollLinkedProgress` 預設 offset 調整
+
+- **原設計**：`offset: ["start end", "end start"]`（範圍 = stage 高度 + viewport = 200vh，progress 0=stage 即將進入、progress 1=stage 完全離開）
+- **實作**：`offset: ["start end", "start start"]`（範圍 = viewport 高度 = 100vh，progress 0=stage 即將進入、progress 1=stage 完全 snap 進入）
+- **原因**：搭配 snap-mandatory 設計，動畫應在「stage 進場 transition 期間」發生、停留時看到終點狀態。原 offset 讓進入頁面時 progress 已 = 0.5，counter 等元件起始值錯位
+- **影響**：因 9.1 改用 IntersectionObserver，`useScrollLinkedProgress` 雖保留 hook 與 test，但 stage 元件已不使用；offset 調整對未來 scroll-driven 場景仍有價值
+
+### 9.3 Hero scroll-driven → staggerChildren 全部載入
+
+- **原設計**（§5「新 Hero 行為」）：scroll 進度 0–100% 推進主標題上推 / 統計浮現 / CTA 在 90% 浮現
+- **實作**：移除 scroll-driven 套用，Hero 只用 motion `staggerChildren` 變體於頁面載入時依序帶出 5 個元素（badge / 主標題 / 副標 / 統計 / CTA），CTA 永遠可見
+- **原因**：
+  - Hero 的 scroll progress 計算與「CTA 在視窗中的時機」對不上——CTA 元素在 motion.div 中央，當 progress 進入 0.85 區間時 CTA 已被捲出視窗，使用者永遠看不到 CTA fade-in
+  - 嘗試調整 offset 範圍仍無法兼顧 stage 1 (progress=0.5 已是停留點) 與 CTA 可見時機
+  - 簡化為 staggerChildren 後使用者一進入頁面看到完整 Hero，CTA 立即可點，導入體驗更直接
+- **影響**：Hero 不再需要 `useScrollLinkedProgress` / `useScrollTimelineSupport`；`HeroTourCta` 元件改寫為純按鈕（不再帶獨立 section 樣式）內嵌於 Hero 主內容末段
+
+### 9.4 Stage 4 標題糾錯
+
+- **原設計**（§2 表格）：「廚房：腳一進去就犯規」
+- **實作**：「廚房：絕對不能截擊」
+- **原因**：原標題對匹克球規則理解有誤——進入廚房本身合法，違規條件是「在廚房內凌空截擊（球未落地就回擊）」。標題糾正後敘事改為「站在廚房內 → 球飛入 → 截擊瞬間紅閃 + ✕ 警示」
+
+### 9.5 Stage 5 動畫：水平 pin + 雷達圖 → grid 並列 + stagger fadeUp
+
+- **原設計**（§2 表格）：scroll 推進時三張卡片水平 horizontal pin 推移、每張高亮時其雷達圖數值補間
+- **實作**：grid-cols-3（mobile grid-cols-1）三張卡片並列，依 progress 區間 stagger fadeUp 進場
+- **原因**：
+  - 原 `motion.div w-[300%]` 配 flex `items-center` 的 layout 在實機顯示卡片置中錯位，且 `transform: -66.66%` 推完後三張卡片全飛到 viewport 外左邊
+  - snap-mandatory 下水平推移使用者看不到中間態，並列展示三種材質反而更直觀
+  - 雷達圖未實作（spec 提及但實作版選擇用色彩標籤強調差異）
+
+### 9.6 motion `pathLength` 對 polyline / 帶 strokeDasharray 的 path 視覺 bug
+
+- **原設計**：Stage 2 折線、Stage 3 軌跡用 motion `pathLength` 0→1 動畫畫出
+- **實作**：改用 motion opacity fade-in
+- **原因**：motion 12 處理 `pathLength` 動畫時把 `stroke-dasharray` 設為 `"1px, 1px"`，導致 stroke 整段變成不可見的微小虛線；改 opacity fade-in 後折線/軌跡清楚顯示，stage 3 也保留原本的 `strokeDasharray="6 6"` 虛線視覺
+
+### 9.7 ScrollTimelineProvider 改用 `useSyncExternalStore`
+
+- **原設計**：`useState` lazy initializer 同步呼叫 `supportsScrollTimeline()`
+- **實作**：`useSyncExternalStore`（`getServerSnapshot` 永遠 false、`getClientSnapshot` 為實際偵測）
+- **原因**：lazy initializer 在 client first render 立即讀真實值，與 server 端 false 結果不一致，造成 hydration mismatch（stage 元件 className 與 Counter 文字 server/client 不同）。useSyncExternalStore 自動處理 hydration 階段使用 server snapshot
+
+### 9.8 Stage 5 / Stage 1 / Stage 4 mobile 視覺修正
+
+- Stage 5 mobile 卡片總高超出 100vh 被截斷 → `max-md:h-[120px]` 縮小
+- Stage 1 計數器 row 在 mobile 撞到 Skip 按鈕 → `max-md:flex-col` 折兩行、`→` 旋轉 90° 變 `↓`
+- Stage 4 腳印太小看不到 → 放大 `rx=8/ry=14`，與球和 ✕ 警示重新對齊在 SVG 中央
+
+### 9.9 後續補 spec 缺項
+
+- Stage 2 右側 14 個小人圖示（每個 = 1 萬人）依序 fade in
+- Stage 6 球員 SVG 收拍敬禮（手臂以肩膀為原點旋轉 60°→30°→-30°）
