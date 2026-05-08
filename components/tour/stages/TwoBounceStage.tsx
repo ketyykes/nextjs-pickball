@@ -16,7 +16,8 @@ export function TwoBounceStage() {
 
 	const ballX = useTransform(source, [0, 0.25, 0.5, 0.75, 1], [60, 200, 340, 480, 540]);
 	const ballY = useTransform(source, [0, 0.25, 0.5, 0.75, 1], [200, 260, 200, 260, 200]);
-	const pathLength = useTransform(source, [0, 1], [0, 1]);
+	// 軌跡虛線淡入：motion pathLength 會覆蓋 strokeDasharray，改用 opacity fade-in 保留虛線視覺
+	const trailOpacity = useTransform(source, [0.05, 0.4], [0, 1]);
 
 	return (
 		<TourStage id="two-bounce" ariaLabel="兩跳規則，最關鍵的一條" stageRef={ref}>
@@ -34,12 +35,7 @@ export function TwoBounceStage() {
 							stroke="#fb923c"
 							strokeWidth="2"
 							strokeDasharray="6 6"
-							pathLength={progress ? pathLength : 1}
-							className={
-								progress
-									? undefined
-									: "animate-stage-fade animation-timeline-view animation-range-cover"
-							}
+							style={{ opacity: trailOpacity }}
 						/>
 						<motion.circle
 							r="10"

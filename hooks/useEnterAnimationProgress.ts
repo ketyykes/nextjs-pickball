@@ -1,10 +1,5 @@
-import { useEffect, type RefObject } from "react";
-import {
-	animate,
-	useInView,
-	useMotionValue,
-	type MotionValue,
-} from "motion/react";
+import { useEffect, useState, type RefObject } from "react";
+import { animate, useMotionValue, type MotionValue } from "motion/react";
 
 interface Options {
 	// 動畫從 0 跑到 1 的秒數，預設 1.5s
@@ -17,15 +12,38 @@ interface Options {
 	root?: RefObject<Element | null>;
 }
 
-// 元素進入 viewport 時，啟動一次性的 0→1 motion 動畫；可作為 stage 進場動畫的進度來源。
-// 配合 snap-mandatory layout 比 scroll-driven 直觀：使用者 snap 進入 stage，動畫立刻播放。
+// 元素進入 viewport（或自訂 root）時，啟動一次性的 0→1 motion 動畫；可作為 stage 進場動畫的進度來源。
+// 自行管理 IntersectionObserver 而不用 motion useInView，是因 useInView 對「root 是內部 scroll container
+// 且初始 target 不在 viewport」的場景觸發不可靠（stage 6 始終回 false）。
 export function useEnterAnimationProgress(
 	target: RefObject<Element | null>,
 	options: Options = {},
 ): MotionValue<number> {
 	const { duration = 1.5, amount = 0.5, once = true, root } = options;
 	const progress = useMotionValue(0);
-	const isInView = useInView(target, { once, amount, root });
+	const [isInView, setIsInView] = useState(false);
+
+	useEffect(() => {
+		const targetEl = target.current;
+		if (!targetEl) return;
+		const rootEl = root?.current ?? null;
+
+		const observer = new IntersectionObserver(
+			(entries) => {
+				for (const entry of entries) {
+					if (entry.isIntersecting && entry.intersectionRatio >= amount) {
+						setIsInView(true);
+						if (once) observer.disconnect();
+					} else if (!once) {
+						setIsInView(false);
+					}
+				}
+			},
+			{ root: rootEl, threshold: amount },
+		);
+		observer.observe(targetEl);
+		return () => observer.disconnect();
+	}, [target, root, amount, once]);
 
 	useEffect(() => {
 		if (!isInView) return;

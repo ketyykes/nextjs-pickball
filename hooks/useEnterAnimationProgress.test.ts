@@ -1,82 +1,144 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { renderHook, act } from "@testing-library/react";
 import { useRef } from "react";
 import { useEnterAnimationProgress } from "./useEnterAnimationProgress";
 
 vi.mock("motion/react", () => {
 	const animate = vi.fn().mockReturnValue({ stop: vi.fn() });
-	const useInView = vi.fn();
 	const useMotionValue = vi.fn().mockImplementation((init: number) => ({
 		get: () => init,
 		set: vi.fn(),
 		on: vi.fn().mockReturnValue(() => {}),
 	}));
-	return { animate, useInView, useMotionValue };
+	return { animate, useMotionValue };
+});
+
+type Callback = (entries: Array<Partial<IntersectionObserverEntry>>) => void;
+
+class MockIntersectionObserver {
+	static instances: MockIntersectionObserver[] = [];
+	callback: Callback;
+	options: IntersectionObserverInit;
+	observed: Element[] = [];
+	disconnected = false;
+
+	constructor(callback: Callback, options: IntersectionObserverInit) {
+		this.callback = callback;
+		this.options = options;
+		MockIntersectionObserver.instances.push(this);
+	}
+
+	observe(el: Element) {
+		this.observed.push(el);
+	}
+
+	disconnect() {
+		this.disconnected = true;
+	}
+
+	unobserve() {}
+
+	takeRecords() {
+		return [];
+	}
+}
+
+beforeEach(() => {
+	MockIntersectionObserver.instances = [];
+	vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
+});
+
+afterEach(() => {
+	vi.unstubAllGlobals();
 });
 
 describe("useEnterAnimationProgress", () => {
-	beforeEach(async () => {
-		const motion = await import("motion/react");
-		(motion.animate as unknown as { mockClear: () => void }).mockClear();
-		(motion.useInView as unknown as { mockReset: () => void }).mockReset();
-	});
-
 	it("元素未進入 viewport 時不觸發 animate", async () => {
-		const motion = await import("motion/react");
-		(
-			motion.useInView as unknown as {
-				mockReturnValue: (v: boolean) => void;
-			}
-		).mockReturnValue(false);
+		const { animate } = await import("motion/react");
+		(animate as unknown as { mockClear: () => void }).mockClear();
 
-		renderHook(() => {
+		const { result } = renderHook(() => {
 			const ref = useRef<HTMLDivElement>(null);
+			Object.defineProperty(ref, "current", {
+				value: document.createElement("div"),
+				writable: true,
+			});
 			return useEnterAnimationProgress(ref);
 		});
 
-		expect(motion.animate).not.toHaveBeenCalled();
+		expect(result.current).toBeDefined();
+		expect(animate).not.toHaveBeenCalled();
 	});
 
 	it("元素進入 viewport 後啟動 0→1 motion 動畫", async () => {
-		const motion = await import("motion/react");
-		(
-			motion.useInView as unknown as {
-				mockReturnValue: (v: boolean) => void;
-			}
-		).mockReturnValue(true);
+		const { animate } = await import("motion/react");
+		(animate as unknown as { mockClear: () => void }).mockClear();
 
 		renderHook(() => {
 			const ref = useRef<HTMLDivElement>(null);
+			Object.defineProperty(ref, "current", {
+				value: document.createElement("div"),
+				writable: true,
+			});
 			return useEnterAnimationProgress(ref);
 		});
 
-		expect(motion.animate).toHaveBeenCalledTimes(1);
-		expect(motion.animate).toHaveBeenCalledWith(
+		const observer = MockIntersectionObserver.instances.at(-1);
+		expect(observer).toBeDefined();
+
+		await act(async () => {
+			observer?.callback([
+				{
+					isIntersecting: true,
+					intersectionRatio: 0.6,
+				} as IntersectionObserverEntry,
+			]);
+		});
+
+		expect(animate).toHaveBeenCalledTimes(1);
+		expect(animate).toHaveBeenCalledWith(
 			expect.anything(),
 			1,
 			expect.objectContaining({ duration: expect.any(Number) }),
 		);
 	});
 
-	it("卸載時呼叫 stop 取消動畫", async () => {
-		const motion = await import("motion/react");
-		const stop = vi.fn();
-		(
-			motion.animate as unknown as { mockReturnValue: (v: unknown) => void }
-		).mockReturnValue({ stop });
-		(
-			motion.useInView as unknown as {
-				mockReturnValue: (v: boolean) => void;
-			}
-		).mockReturnValue(true);
+	it("once=true 進入後 disconnect observer", async () => {
+		renderHook(() => {
+			const ref = useRef<HTMLDivElement>(null);
+			Object.defineProperty(ref, "current", {
+				value: document.createElement("div"),
+				writable: true,
+			});
+			return useEnterAnimationProgress(ref, { once: true });
+		});
 
+		const observer = MockIntersectionObserver.instances.at(-1);
+
+		await act(async () => {
+			observer?.callback([
+				{
+					isIntersecting: true,
+					intersectionRatio: 0.7,
+				} as IntersectionObserverEntry,
+			]);
+		});
+
+		expect(observer?.disconnected).toBe(true);
+	});
+
+	it("卸載時 disconnect observer", () => {
 		const { unmount } = renderHook(() => {
 			const ref = useRef<HTMLDivElement>(null);
+			Object.defineProperty(ref, "current", {
+				value: document.createElement("div"),
+				writable: true,
+			});
 			return useEnterAnimationProgress(ref);
 		});
 
+		const observer = MockIntersectionObserver.instances.at(-1);
 		unmount();
-
-		expect(stop).toHaveBeenCalled();
+		expect(observer?.disconnected).toBe(true);
 	});
 });

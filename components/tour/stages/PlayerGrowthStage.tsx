@@ -6,12 +6,13 @@ import { TourStage } from "@/components/tour/TourStage";
 import { useStageProgress } from "@/components/tour/shared/ScrollTimelineProvider";
 import { playerGrowth } from "@/data/tour/playerGrowth";
 
-// stage 2：年度成長折線圖。捲動 0→1 期間，折線 pathLength 從 0 補到 1。
+// stage 2：年度成長折線圖。捲動 0→1 期間，折線淡入並順序點出每個年度。
+// 改用 opacity fade-in 而非 pathLength：motion 對 polyline pathLength 動畫
+// 會把 strokeDasharray 設成 "1px, 1px" 導致 stroke 整段變成不可見的虛線。
 export function PlayerGrowthStage() {
 	const ref = useRef<HTMLElement>(null);
 	const progress = useStageProgress(ref);
 
-	// fallback motion value 讓 useTransform 永遠拿到合法 MotionValue。
 	const fallback = useMotionValue(0);
 	const source = progress ?? fallback;
 
@@ -24,7 +25,7 @@ export function PlayerGrowthStage() {
 		})
 		.join(" ");
 
-	const pathLength = useTransform(source, [0, 1], [0, 1]);
+	const lineOpacity = useTransform(source, [0.1, 0.7], [0, 1]);
 
 	return (
 		<TourStage id="player-growth" ariaLabel="14 萬人正在打" stageRef={ref}>
@@ -40,12 +41,7 @@ export function PlayerGrowthStage() {
 							fill="none"
 							stroke="#a3e635"
 							strokeWidth="3"
-							pathLength={progress ? pathLength : 1}
-							className={
-								progress
-									? undefined
-									: "animate-stage-fade animation-timeline-view animation-range-cover"
-							}
+							style={{ opacity: lineOpacity }}
 						/>
 						{playerGrowth.map((d, i) => {
 							const x = (i / (playerGrowth.length - 1)) * 560 + 20;
