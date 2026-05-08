@@ -25,7 +25,7 @@ describe("ScrollTimelineProvider", () => {
 		(supportsScrollTimeline as unknown as { mockReset: () => void }).mockReset();
 	});
 
-	it("於初次掛載偵測一次並透過 context 提供結果", async () => {
+	it("透過 context 提供 supportsScrollTimeline 偵測結果", async () => {
 		const { supportsScrollTimeline } = await import("@/lib/scrollTimeline");
 		(
 			supportsScrollTimeline as unknown as {
@@ -41,9 +41,9 @@ describe("ScrollTimelineProvider", () => {
 			wrapper,
 		});
 
-		// lazy initializer 同步取得，無需 act flush
+		// useSyncExternalStore 的 client snapshot 於 render 階段同步取得偵測值
 		expect(result.current).toBe(true);
-		expect(supportsScrollTimeline).toHaveBeenCalledTimes(1);
+		expect(supportsScrollTimeline).toHaveBeenCalled();
 	});
 
 	it("useScrollTimelineSupport 在 Provider 外呼叫時回傳 false 預設值", () => {

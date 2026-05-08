@@ -1,11 +1,7 @@
 "use client";
 
-import { useRef } from "react";
 import { ChevronDown } from "lucide-react";
-import { motion, useTransform, type Variants } from "motion/react";
-import { useReducedMotion } from "@/hooks/useReducedMotion";
-import { useScrollLinkedProgress } from "@/hooks/useScrollLinkedProgress";
-import { useScrollTimelineSupport } from "@/components/tour/shared/ScrollTimelineProvider";
+import { motion, type Variants } from "motion/react";
 import { HeroTourCta } from "@/components/guide/HeroTourCta";
 
 interface HeroStat {
@@ -19,50 +15,30 @@ const heroStats: readonly HeroStat[] = [
 	{ num: "11", label: "分即可拿下一局" },
 ] as const;
 
-// 父層 stagger：第一個元素延遲 0.2s 進場，後續每 0.2s 出一個。（reduced-motion fallback）
+// 父層 stagger：整體於 0.6s 內依序帶出 5 個 items（badge / 主標題 / 副標 / 統計 / CTA）。
 const heroContainerVariants: Variants = {
 	hidden: {},
 	show: {
-		transition: { staggerChildren: 0.2, delayChildren: 0.2 },
+		transition: { staggerChildren: 0.08, delayChildren: 0.05 },
 	},
 };
 
-// 子層 fadeUp：對齊原 @keyframes fadeUp（translateY 30px、duration 0.8s、ease-out）。（reduced-motion fallback）
+// 子層 fadeUp：縮短 duration 至 0.4s 並降低 translateY 距離以維持輕快觀感。
 const heroItemVariants: Variants = {
-	hidden: { opacity: 0, y: 30 },
+	hidden: { opacity: 0, y: 20 },
 	show: {
 		opacity: 1,
 		y: 0,
-		transition: { duration: 0.8, ease: "easeOut" },
+		transition: { duration: 0.4, ease: "easeOut" },
 	},
 };
 
-// Hero 三分支（與 useStageProgress 對稱）：
-//   1. reduced-motion = true → 既有 staggerChildren fallback（不掛 scroll-driven）
-//   2. supportsScrollTimeline = true → CSS scroll-timeline 接管（本元件不需做事）
-//   3. 其餘 → motion useTransform 驅動 scroll-driven 入場
+// Hero：以 staggerChildren 在頁面載入後一次帶出全部內容（含 CTA）。
+// 取消 scroll-driven 控制 opacity 的設計——scroll 進入區間和 CTA 在視窗中的時機難以匹配，
+// 改成 CTA 永遠可見、捲動只走自然版面流動。
 export function Hero() {
-	const sectionRef = useRef<HTMLElement>(null);
-	const reduced = useReducedMotion();
-	const supported = useScrollTimelineSupport();
-	const progress = useScrollLinkedProgress(sectionRef);
-
-	// useTransform 的 source 必須是 MotionValue（progress 來自 useScrollLinkedProgress 必有值）。
-	// 非 reduced-motion 且 scroll-timeline 不支援時才把這些 motion value 套到 style。
-	const titleY = useTransform(progress, [0, 0.3], [0, -40]);
-	const titleScale = useTransform(progress, [0, 0.3], [1, 0.92]);
-	const statsOpacity = useTransform(progress, [0.6, 0.9], [0, 1]);
-	const statsY = useTransform(progress, [0.6, 0.9], [40, 0]);
-	const ctaOpacity = useTransform(progress, [0.85, 1], [0, 1]);
-	const ctaY = useTransform(progress, [0.85, 1], [20, 0]);
-
-	const useScrollDriven = !reduced && !supported;
-
 	return (
-		<section
-			ref={sectionRef}
-			className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-900"
-		>
+		<section className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-900">
 			{/* 背景光暈 */}
 			<div
 				aria-hidden
@@ -92,7 +68,6 @@ export function Hero() {
 				variants={heroContainerVariants}
 				initial="hidden"
 				animate="show"
-				style={useScrollDriven ? { y: titleY, scale: titleScale } : undefined}
 			>
 				<motion.div
 					variants={heroItemVariants}
@@ -118,9 +93,6 @@ export function Hero() {
 				<motion.div
 					className="mb-10 flex flex-wrap justify-center gap-12 max-md:gap-6"
 					variants={heroItemVariants}
-					style={
-						useScrollDriven ? { opacity: statsOpacity, y: statsY } : undefined
-					}
 				>
 					{heroStats.map((stat) => (
 						<div key={stat.label} className="text-center">
@@ -134,13 +106,7 @@ export function Hero() {
 					))}
 				</motion.div>
 
-				{/* Hero 末段 CTA：scroll 進度約 90% 浮現（spec scenario 1） */}
-				<motion.div
-					variants={heroItemVariants}
-					style={
-						useScrollDriven ? { opacity: ctaOpacity, y: ctaY } : undefined
-					}
-				>
+				<motion.div variants={heroItemVariants}>
 					<HeroTourCta />
 				</motion.div>
 			</motion.div>

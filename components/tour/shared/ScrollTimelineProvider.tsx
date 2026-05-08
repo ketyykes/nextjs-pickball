@@ -3,7 +3,7 @@
 import {
 	createContext,
 	useContext,
-	useState,
+	useSyncExternalStore,
 	type ReactNode,
 	type RefObject,
 } from "react";
@@ -14,11 +14,19 @@ import { useScrollLinkedProgress } from "@/hooks/useScrollLinkedProgress";
 
 const ScrollTimelineContext = createContext<boolean>(false);
 
-// 於 /tour 入口掛一次：偵測 CSS scroll-timeline 支援，全頁子元件透過 context 共享結果。
-// 使用 useState lazy initializer 於首次 render 同步偵測，避免 effect 內 setState 造成串連 render；
-// SSR 時 supportsScrollTimeline 會回 false（CSS 物件不存在），client 首次 render 立即取得正確值。
+// 偵測值不會於 runtime 變動，因此 subscribe 為 noop。
+// useSyncExternalStore 的 server snapshot 永遠回 false，client snapshot 回實際偵測，
+// React 會於 hydration 階段使用 server snapshot 對齊 SSR 結果，避免 hydration mismatch。
+const subscribe = () => () => {};
+const getClientSnapshot = () => supportsScrollTimeline();
+const getServerSnapshot = () => false;
+
 export function ScrollTimelineProvider({ children }: { children: ReactNode }) {
-	const [supported] = useState<boolean>(() => supportsScrollTimeline());
+	const supported = useSyncExternalStore(
+		subscribe,
+		getClientSnapshot,
+		getServerSnapshot,
+	);
 
 	return (
 		<ScrollTimelineContext.Provider value={supported}>
