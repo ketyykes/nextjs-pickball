@@ -19,14 +19,15 @@ const COLS = PERSON_COUNT / ROWS;
 
 interface PersonProps {
 	source: MotionValue<number>;
-	index: number;
+	// 進場順序索引 0..PERSON_COUNT-1，同時用於計算 progress 區間
+	order: number;
 	x: number;
 	y: number;
 }
 
-function Person({ source, index, x, y }: PersonProps) {
-	// 小人在 [0.15, 0.95] 區間依 index 順序出場，每個間隔 ~5%
-	const start = 0.15 + (index / PERSON_COUNT) * 0.7;
+function Person({ source, order, x, y }: PersonProps) {
+	// 小人在 [0.15, 0.95] 區間依 order 順序出場，每個間隔 ~5%
+	const start = 0.15 + (order / PERSON_COUNT) * 0.7;
 	const end = start + 0.08;
 	const opacity = useTransform(source, [start, end], [0, 1]);
 
@@ -94,13 +95,7 @@ export function PlayerGrowthStage() {
 							const px = 590 + col * 28;
 							const py = 90 + row * 100;
 							return (
-								<Person
-									key={i}
-									source={source}
-									index={i}
-									x={px}
-									y={py}
-								/>
+								<Person key={i} source={source} order={i} x={px} y={py} />
 							);
 						})}
 						<text

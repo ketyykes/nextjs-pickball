@@ -367,3 +367,12 @@ return progress
 
 - Stage 2 右側 14 個小人圖示（每個 = 1 萬人）依序 fade in
 - Stage 6 球員 SVG 收拍敬禮（手臂以肩膀為原點旋轉 60°→30°→-30°）
+
+### 9.10 Code review 後修補（reviewer Critical + Important）
+
+- **Reduced-motion 內容消失修復（C1/C2/C3）**：6 個 stage 的 `useMotionValue(0)` fallback 改為 `useMotionValue(1)`，reduced-motion 使用者直接看到動畫終點狀態（counter=81、CTA opacity=1、紅閃 0.55 等）而非空白起點。E2E 對應更新 STAGE_ARIAS Stage 4 label 與每 stage 內 inner content 斷言
+- **`useReducedMotion` 改 `useSyncExternalStore`（I1）**：與 `ScrollTimelineProvider` 對稱，避免 lazy initializer 在 client first render 立即讀真實值造成的 hydration mismatch
+- **Dead code 清理（I2）**：刪除 `lib/scrollTimeline.ts`、`hooks/useScrollLinkedProgress.ts`、`@keyframes stage-fade/stage-pin`、四個對應 `@utility`，與 `ScrollTimelineProvider` 內 `supportsScrollTimeline` 偵測邏輯與 `useScrollTimelineSupport` export。Provider 簡化為僅提供 `containerRef` context，新增 `useTourScrollContainer()` 給 `TourProgressRail` 使用
+- **`TourProgressRail` observer root 對齊 main scroll container（I3）**：透過 `useTourScrollContainer()` 取得 ref，與 `useStageProgress` 一致，避免 layout 改動時偵測失準。並合併為單一 observer + 多 target 取代原 6 個獨立 observer
+- **`HeroTourCta` 改用 `<Link transitionTypes>`（I4）**：採 Next.js 16 推薦的 view transition 入口，享受 prefetch 與 no-JS fallback；`ClosingStage`「回到完整指南」與 `TourSkipButton` 維持 imperative `router.push`（離開頁面、prefetch 收益低）
+- **Person component prop 命名（M3）**：`index` 改名 `order` 並移除重複的位置參數

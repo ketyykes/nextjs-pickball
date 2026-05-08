@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTourScrollContainer } from "@/components/tour/shared/ScrollTimelineProvider";
 
 const STAGE_IDS = [
 	"court-size",
@@ -12,34 +13,35 @@ const STAGE_IDS = [
 ] as const;
 
 // 左側 fixed 直條，6 格依當前 stage 高亮。以 IntersectionObserver 偵測哪一個 stage
-// 占視窗中央較多。
+// 占視窗中央較多；observer root 對齊 main scroll container（與 useStageProgress 一致）
+// 而非預設 viewport，避免日後 layout 改動讓 main 不再滿 viewport 時偵測失準。
 export function TourProgressRail() {
+	const containerRef = useTourScrollContainer();
 	const [activeIndex, setActiveIndex] = useState(0);
 
 	useEffect(() => {
-		const observers: IntersectionObserver[] = [];
-		STAGE_IDS.forEach((id, idx) => {
+		const root = containerRef?.current ?? null;
+		const observer = new IntersectionObserver(
+			(entries) => {
+				for (const entry of entries) {
+					if (!entry.isIntersecting || entry.intersectionRatio <= 0.5) continue;
+					const id = entry.target.getAttribute("data-stage-id");
+					const idx = STAGE_IDS.indexOf(
+						id as (typeof STAGE_IDS)[number],
+					);
+					if (idx !== -1) setActiveIndex(idx);
+				}
+			},
+			{ root, threshold: [0.5] },
+		);
+
+		for (const id of STAGE_IDS) {
 			const el = document.querySelector<HTMLElement>(`[data-stage-id="${id}"]`);
-			if (!el) return;
+			if (el) observer.observe(el);
+		}
 
-			const observer = new IntersectionObserver(
-				(entries) => {
-					for (const entry of entries) {
-						if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
-							setActiveIndex(idx);
-						}
-					}
-				},
-				{ threshold: [0.5] },
-			);
-			observer.observe(el);
-			observers.push(observer);
-		});
-
-		return () => {
-			observers.forEach((o) => o.disconnect());
-		};
-	}, []);
+		return () => observer.disconnect();
+	}, [containerRef]);
 
 	return (
 		<div
