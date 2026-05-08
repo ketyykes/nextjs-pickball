@@ -1,7 +1,10 @@
 "use client";
 
+import { useRef } from "react";
 import { ChevronDown } from "lucide-react";
-import { motion, type Variants } from "motion/react";
+import { motion, useTransform, type Variants } from "motion/react";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { useScrollLinkedProgress } from "@/hooks/useScrollLinkedProgress";
 
 interface HeroStat {
 	num: string;
@@ -14,7 +17,7 @@ const heroStats: readonly HeroStat[] = [
 	{ num: "11", label: "分即可拿下一局" },
 ] as const;
 
-// 父層 stagger：第一個元素延遲 0.2s 進場，後續每 0.2s 出一個。
+// 父層 stagger：第一個元素延遲 0.2s 進場，後續每 0.2s 出一個。（reduced-motion fallback）
 const heroContainerVariants: Variants = {
 	hidden: {},
 	show: {
@@ -22,7 +25,7 @@ const heroContainerVariants: Variants = {
 	},
 };
 
-// 子層 fadeUp：對齊原 @keyframes fadeUp（translateY 30px、duration 0.8s、ease-out）。
+// 子層 fadeUp：對齊原 @keyframes fadeUp（translateY 30px、duration 0.8s、ease-out）。（reduced-motion fallback）
 const heroItemVariants: Variants = {
 	hidden: { opacity: 0, y: 30 },
 	show: {
@@ -33,9 +36,28 @@ const heroItemVariants: Variants = {
 };
 
 // 對應原型 .hero：深藍底 + 透視場地 + 浮球 + 主標題 + 三項統計。
+// 行為：reduced-motion 時保留既有 staggerChildren 入場；非 reduced-motion 時於既有
+// fadeUp 入場後，再額外掛上 scroll-driven 主標題位移／統計浮現，達到捲動推進效果。
 export function Hero() {
+	const sectionRef = useRef<HTMLElement>(null);
+	const reduced = useReducedMotion();
+	const progress = useScrollLinkedProgress(sectionRef);
+
+	// useTransform 的 source 必須是 MotionValue（progress 來自 useScrollLinkedProgress 必有值）。
+	// 非 reduced-motion 時才把這些 motion value 套到 style；reduced-motion 雖然仍會被計算，
+	// 但不會影響 fallback staggerChildren 的視覺結果。
+	const titleY = useTransform(progress, [0, 0.3], [0, -40]);
+	const titleScale = useTransform(progress, [0, 0.3], [1, 0.92]);
+	const statsOpacity = useTransform(progress, [0.6, 0.9], [0, 1]);
+	const statsY = useTransform(progress, [0.6, 0.9], [40, 0]);
+
+	const useScrollDriven = !reduced;
+
 	return (
-		<section className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-900">
+		<section
+			ref={sectionRef}
+			className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-900"
+		>
 			{/* 背景光暈 */}
 			<div
 				aria-hidden
@@ -65,6 +87,7 @@ export function Hero() {
 				variants={heroContainerVariants}
 				initial="hidden"
 				animate="show"
+				style={useScrollDriven ? { y: titleY, scale: titleScale } : undefined}
 			>
 				<motion.div
 					variants={heroItemVariants}
@@ -88,8 +111,11 @@ export function Hero() {
 				</motion.p>
 
 				<motion.div
-					variants={heroItemVariants}
 					className="flex flex-wrap justify-center gap-12 max-md:gap-6"
+					variants={heroItemVariants}
+					style={
+						useScrollDriven ? { opacity: statsOpacity, y: statsY } : undefined
+					}
 				>
 					{heroStats.map((stat) => (
 						<div key={stat.label} className="text-center">

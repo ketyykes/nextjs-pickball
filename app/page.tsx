@@ -4,6 +4,7 @@ import { Conclusion } from "@/components/guide/Conclusion";
 import { CourtSection } from "@/components/guide/CourtSection";
 import { FoulsSection } from "@/components/guide/FoulsSection";
 import { Hero } from "@/components/guide/Hero";
+import { HeroTourCta } from "@/components/guide/HeroTourCta";
 import { KitchenSection } from "@/components/guide/KitchenSection";
 import { MaterialsSection } from "@/components/guide/MaterialsSection";
 import { PartDivider } from "@/components/guide/PartDivider";
@@ -18,6 +19,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Hero />
+      <HeroTourCta />
       <TocBar />
 
       <PartDivider num="01" title="比賽規則完整說明" />
