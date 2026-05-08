@@ -122,9 +122,9 @@ Hero 元件在 `useReducedMotion()` 為 true 時 SHALL 退化為既有 motion `s
 
 ### Requirement: 首頁 CTA 串接並觸發方向性過場
 
-系統 SHALL 於 `app/page.tsx` 的 Hero 結束位置（TocBar 之前）渲染「進入完整體驗 →」按鈕；按鈕點擊 SHALL 呼叫 `addTransitionType('forward')` 並導航至 `/tour`。`/tour` 內之 ClosingStage「回到完整指南」按鈕與 `TourSkipButton` 點擊 SHALL 呼叫 `addTransitionType('back')` 並導航回 `/`（Skip 額外 scroll 至 `#court`）。
+系統 SHALL 於 `app/page.tsx` 的 Hero 結束位置（TocBar 之前）渲染「進入完整體驗 →」按鈕；按鈕點擊 SHALL 呼叫 `router.push('/tour', { transitionTypes: ['nav-forward'] })` 並導航至 `/tour`（Next.js 16 router 內部會於 view transition 期間呼叫 React 的 `addTransitionType`）。`/tour` 內之 ClosingStage「回到完整指南」按鈕與 `TourSkipButton` 點擊 SHALL 呼叫 `router.push(href, { transitionTypes: ['nav-back'] })` 並導航回 `/`（Skip 目標為 `/#court`，額外 scroll 至 `#court`）。
 
-`app/layout.tsx` 之主內容 SHALL 由 React 19 `<ViewTransition>` 包覆，透過 CSS 對 `forward` 與 `back` 兩 type 套用不同方向滑入動畫。
+`app/layout.tsx` 之主內容 SHALL 由 React 19 `<ViewTransition>` 包覆，透過 CSS 對 `nav-forward` 與 `nav-back` 兩 transition type 套用不同方向滑入動畫。
 
 #### Scenario: 首頁 CTA 點擊後導向 `/tour`
 
