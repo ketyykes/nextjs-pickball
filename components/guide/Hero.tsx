@@ -5,6 +5,8 @@ import { ChevronDown } from "lucide-react";
 import { motion, useTransform, type Variants } from "motion/react";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useScrollLinkedProgress } from "@/hooks/useScrollLinkedProgress";
+import { useScrollTimelineSupport } from "@/components/tour/shared/ScrollTimelineProvider";
+import { HeroTourCta } from "@/components/guide/HeroTourCta";
 
 interface HeroStat {
 	num: string;
@@ -35,23 +37,26 @@ const heroItemVariants: Variants = {
 	},
 };
 
-// 對應原型 .hero：深藍底 + 透視場地 + 浮球 + 主標題 + 三項統計。
-// 行為：reduced-motion 時保留既有 staggerChildren 入場；非 reduced-motion 時於既有
-// fadeUp 入場後，再額外掛上 scroll-driven 主標題位移／統計浮現，達到捲動推進效果。
+// Hero 三分支（與 useStageProgress 對稱）：
+//   1. reduced-motion = true → 既有 staggerChildren fallback（不掛 scroll-driven）
+//   2. supportsScrollTimeline = true → CSS scroll-timeline 接管（本元件不需做事）
+//   3. 其餘 → motion useTransform 驅動 scroll-driven 入場
 export function Hero() {
 	const sectionRef = useRef<HTMLElement>(null);
 	const reduced = useReducedMotion();
+	const supported = useScrollTimelineSupport();
 	const progress = useScrollLinkedProgress(sectionRef);
 
 	// useTransform 的 source 必須是 MotionValue（progress 來自 useScrollLinkedProgress 必有值）。
-	// 非 reduced-motion 時才把這些 motion value 套到 style；reduced-motion 雖然仍會被計算，
-	// 但不會影響 fallback staggerChildren 的視覺結果。
+	// 非 reduced-motion 且 scroll-timeline 不支援時才把這些 motion value 套到 style。
 	const titleY = useTransform(progress, [0, 0.3], [0, -40]);
 	const titleScale = useTransform(progress, [0, 0.3], [1, 0.92]);
 	const statsOpacity = useTransform(progress, [0.6, 0.9], [0, 1]);
 	const statsY = useTransform(progress, [0.6, 0.9], [40, 0]);
+	const ctaOpacity = useTransform(progress, [0.85, 1], [0, 1]);
+	const ctaY = useTransform(progress, [0.85, 1], [20, 0]);
 
-	const useScrollDriven = !reduced;
+	const useScrollDriven = !reduced && !supported;
 
 	return (
 		<section
@@ -111,7 +116,7 @@ export function Hero() {
 				</motion.p>
 
 				<motion.div
-					className="flex flex-wrap justify-center gap-12 max-md:gap-6"
+					className="mb-10 flex flex-wrap justify-center gap-12 max-md:gap-6"
 					variants={heroItemVariants}
 					style={
 						useScrollDriven ? { opacity: statsOpacity, y: statsY } : undefined
@@ -127,6 +132,16 @@ export function Hero() {
 							</div>
 						</div>
 					))}
+				</motion.div>
+
+				{/* Hero 末段 CTA：scroll 進度約 90% 浮現（spec scenario 1） */}
+				<motion.div
+					variants={heroItemVariants}
+					style={
+						useScrollDriven ? { opacity: ctaOpacity, y: ctaY } : undefined
+					}
+				>
+					<HeroTourCta />
 				</motion.div>
 			</motion.div>
 
