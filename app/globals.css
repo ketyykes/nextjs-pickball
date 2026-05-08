@@ -220,3 +220,52 @@
     animation-delay: 0s !important;
   }
 }
+
+/* tour stage 共用 keyframes：以 scroll-timeline 推進，duration 設極短讓 timeline 主導 */
+
+@keyframes stage-fade {
+  0% {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  30%,
+  70% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-40px);
+  }
+}
+
+@keyframes stage-pin {
+  from {
+    transform: translateX(0%);
+  }
+  to {
+    transform: translateX(-66.66%);
+  }
+}
+
+/* Tailwind v4 自訂 utility：把 scroll-timeline 與 animation 連動所需的屬性一併供應 */
+
+@utility animation-timeline-view {
+  animation-timeline: view();
+}
+
+@utility animation-range-cover {
+  animation-range: cover 0% cover 100%;
+}
+
+@utility animate-stage-fade {
+  animation-name: stage-fade;
+  animation-duration: 1ms;
+  animation-fill-mode: both;
+}
+
+@utility animate-stage-pin {
+  animation-name: stage-pin;
+  animation-duration: 1ms;
+  animation-fill-mode: both;
+}
