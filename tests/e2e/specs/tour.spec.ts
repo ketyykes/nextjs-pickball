@@ -3,6 +3,18 @@ import { test, expect } from "@playwright/test";
 // /tour 體驗 + Hero CTA 的端對端驗收
 // - 對應 spec: tour-experience › 對應 E2E 驗收
 // - 6 條 case 涵蓋：CTA 導向、Stage 1 標題、6 個 stage 容器排序、ClosingStage 返回鈕、Skip 跳過、reduced-motion 可讀性
+
+// 6 個 stage 的 data-stage-id 與對應的 aria-label（與 stage 元件保持同步）
+// 用於 reduced-motion 案例：逐一捲到並斷言對應 region 可見
+const STAGE_ARIAS = [
+	{ id: "court-size", label: "比網球更小，但同樣激烈" },
+	{ id: "player-growth", label: "14 萬人正在打" },
+	{ id: "two-bounce", label: "兩跳規則，最關鍵的一條" },
+	{ id: "kitchen-violation", label: "廚房：腳一進去就犯規" },
+	{ id: "materials-spectrum", label: "球拍材質光譜" },
+	{ id: "closing", label: "準備好開始了嗎？" },
+] as const;
+
 test.describe("/tour 體驗", () => {
 	test("首頁有 CTA 並能導向 /tour", async ({ page }) => {
 		await page.goto("/");
@@ -13,6 +25,8 @@ test.describe("/tour 體驗", () => {
 		await expect(cta).toBeVisible();
 		await cta.click();
 		await expect(page).toHaveURL(/\/tour$/);
+		// 補：驗證 /tour 實際載入第一個 stage 容器
+		await expect(page.locator('[data-stage-id="court-size"]')).toBeVisible();
 	});
 
 	test("/tour 載入後可見 Stage 1 標題", async ({ page }) => {
@@ -51,8 +65,7 @@ test.describe("/tour 體驗", () => {
 		await page.goto("/tour");
 		await page.getByRole("button", { name: /跳過/ }).click();
 		await expect(page).toHaveURL(/\/#court$/);
-		// 等待錨點滾動完成
-		await page.waitForTimeout(400);
+		// 直接以 toBeInViewport 自動輪詢，移除脆弱的 waitForTimeout
 		const courtSection = page.locator("#court");
 		await expect(courtSection).toBeInViewport();
 	});
@@ -61,12 +74,17 @@ test.describe("/tour 體驗", () => {
 		const context = await browser.newContext({ reducedMotion: "reduce" });
 		const page = await context.newPage();
 		await page.goto("/tour");
-		await expect(page.getByText("比網球更小，")).toBeVisible();
-		const main = page.locator("main");
-		await main.evaluate((el) => {
-			el.scrollTo({ top: el.scrollHeight, behavior: "instant" as ScrollBehavior });
-		});
-		await expect(page.getByRole("button", { name: "回到完整指南" })).toBeVisible();
+
+		// 逐一捲到每個 stage 並斷言其 region（aria-label）可見
+		// scroll-snap 容器內以 scrollIntoViewIfNeeded() 帶該 stage 進視窗
+		for (const stage of STAGE_ARIAS) {
+			const el = page.locator(`[data-stage-id="${stage.id}"]`);
+			await el.scrollIntoViewIfNeeded();
+			await expect(el).toBeVisible();
+			// <section aria-label="..."> 在 Playwright 對應 role=region
+			await expect(page.getByRole("region", { name: stage.label })).toBeVisible();
+		}
+
 		await context.close();
 	});
 });
