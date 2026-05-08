@@ -5,8 +5,21 @@ import { motion, useMotionValue, useTransform } from "motion/react";
 import { TourStage } from "@/components/tour/TourStage";
 import { useStageProgress } from "@/components/tour/shared/ScrollTimelineProvider";
 
-// stage 4：廚房違規。俯視匹克球場（縱向細長、中央橫向球網、球網兩側為廚房 NVZ）。
-// 進場動畫：紅色廚房區淡入 → 腳印從後場走向廚房線 → 跨越廚房線時紅閃示警。
+// 俯視腳掌（橢圓主體 + 腳趾排列），用以辨識「站在廚房內」的人位置
+function Foot({ x, y }: { x: number; y: number }) {
+	return (
+		<g transform={`translate(${x} ${y})`}>
+			<ellipse cx="0" cy="0" rx="5" ry="9" fill="white" />
+			<circle cx="-3.2" cy="-9" r="1.5" fill="white" />
+			<circle cx="-0.8" cy="-11" r="1.8" fill="white" />
+			<circle cx="1.6" cy="-11" r="1.6" fill="white" />
+			<circle cx="3.6" cy="-9.5" r="1.3" fill="white" />
+		</g>
+	);
+}
+
+// stage 4：廚房違規。俯視匹克球場，敘事為「站在廚房內 → 球飛入 → 截擊瞬間 = 犯規」。
+// 重點：進入廚房本身合法；違規條件是「在廚房內凌空截擊（球未落地就回擊）」。
 export function KitchenViolationStage() {
 	const ref = useRef<HTMLElement>(null);
 	const progress = useStageProgress(ref);
@@ -14,17 +27,23 @@ export function KitchenViolationStage() {
 	const fallback = useMotionValue(0);
 	const source = progress ?? fallback;
 
-	const kitchenOpacity = useTransform(source, [0, 0.4], [0, 0.85]);
-	// 腳從後場（cy=380）走到廚房邊（cy=325 即剛踩到下廚房線）
-	const footCy = useTransform(source, [0.3, 0.85], [380, 325]);
+	const kitchenOpacity = useTransform(source, [0, 0.35], [0, 0.85]);
+	const feetOpacity = useTransform(source, [0.35, 0.55], [0, 1]);
+	const ballOpacity = useTransform(source, [0.5, 0.6], [0, 1]);
+	const ballCy = useTransform(source, [0.5, 0.85], [60, 215]);
 	const flashOpacity = useTransform(source, [0.85, 1], [0, 0.55]);
+	const xOpacity = useTransform(source, [0.85, 1], [0, 1]);
 
 	return (
-		<TourStage id="kitchen-violation" ariaLabel="廚房：腳一進去就犯規" stageRef={ref}>
+		<TourStage
+			id="kitchen-violation"
+			ariaLabel="廚房：站在裡面絕對不能截擊"
+			stageRef={ref}
+		>
 			<div className="flex h-full w-full items-center justify-center bg-slate-900 text-white">
 				<div className="flex flex-col items-center gap-8">
 					<h2 className="text-center text-[clamp(2rem,5vw,4rem)] font-black">
-						廚房：<span className="text-orange-500">腳一進去就犯規</span>
+						廚房：<span className="text-orange-500">絕對不能截擊</span>
 					</h2>
 
 					<svg
@@ -42,7 +61,7 @@ export function KitchenViolationStage() {
 							strokeWidth="3"
 						/>
 
-						{/* 廚房紅區（球網上下各 80，總共 160 高、佔場地縱向 40%） */}
+						{/* 廚房紅區（球網兩側 80 高、總高 160） */}
 						<motion.rect
 							x="20"
 							y="160"
@@ -52,7 +71,7 @@ export function KitchenViolationStage() {
 							style={{ opacity: kitchenOpacity }}
 						/>
 
-						{/* 廚房線（橙虛線標示邊界） */}
+						{/* 廚房邊界線（橙虛線） */}
 						<line
 							x1="20"
 							y1="160"
@@ -74,7 +93,7 @@ export function KitchenViolationStage() {
 							opacity="0.9"
 						/>
 
-						{/* 球網（橫向白色虛線、廚房正中央） */}
+						{/* 球網（橫向白虛線） */}
 						<line
 							x1="20"
 							y1="240"
@@ -85,7 +104,7 @@ export function KitchenViolationStage() {
 							strokeDasharray="2 3"
 						/>
 
-						{/* 中線（廚房外的後場上下兩段，分隔左右發球區） */}
+						{/* 中線（廚房外的後場上下兩段） */}
 						<line
 							x1="140"
 							y1="20"
@@ -103,7 +122,7 @@ export function KitchenViolationStage() {
 							strokeWidth="2"
 						/>
 
-						{/* 標示文字 */}
+						{/* 標示 */}
 						<text
 							x="180"
 							y="200"
@@ -123,21 +142,22 @@ export function KitchenViolationStage() {
 						>
 							網
 						</text>
-						<text
-							x="30"
-							y="395"
+
+						{/* 球從球網對面（上方）飛入（lime 綠色） */}
+						<motion.circle
+							cx="200"
+							r="6"
 							fill="#a3e635"
-							fontSize="12"
-							fontFamily="sans-serif"
-						>
-							後場
-						</text>
+							style={{ opacity: ballOpacity, cy: ballCy }}
+						/>
 
-						{/* 腳印（左右兩腳並排，cy 由 footCy 控制，從後場往廚房線走） */}
-						<motion.circle cx="190" r="7" fill="white" cy={footCy} />
-						<motion.circle cx="210" r="7" fill="white" cy={footCy} />
+						{/* 腳印（兩個腳掌站在廚房內、球網下方） */}
+						<motion.g style={{ opacity: feetOpacity }}>
+							<Foot x={185} y={235} />
+							<Foot x={215} y={235} />
+						</motion.g>
 
-						{/* 紅閃覆蓋整個廚房（跨越廚房線時警示） */}
+						{/* 紅閃覆蓋整個廚房 */}
 						<motion.rect
 							x="20"
 							y="160"
@@ -146,11 +166,37 @@ export function KitchenViolationStage() {
 							fill="#dc2626"
 							style={{ opacity: flashOpacity }}
 						/>
+
+						{/* 截擊瞬間的 ✕ 警示符號 */}
+						<motion.g style={{ opacity: xOpacity }}>
+							<line
+								x1="188"
+								y1="218"
+								x2="212"
+								y2="242"
+								stroke="white"
+								strokeWidth="3.5"
+								strokeLinecap="round"
+							/>
+							<line
+								x1="212"
+								y1="218"
+								x2="188"
+								y2="242"
+								stroke="white"
+								strokeWidth="3.5"
+								strokeLinecap="round"
+							/>
+						</motion.g>
 					</svg>
 
 					<p className="max-w-md text-center text-sm text-white/60">
-						隨時都可以進入廚房，但站在裡面（包括踩到廚房線）
+						隨時都能進入廚房，但站在裡面（包括踩線）
 						<span className="text-orange-400">絕對不能截擊</span>
+						<br />
+						<span className="text-white/40">
+							截擊 = 球落地前直接凌空回擊
+						</span>
 					</p>
 				</div>
 			</div>
