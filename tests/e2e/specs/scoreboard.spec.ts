@@ -75,13 +75,7 @@ test.describe("/scoreboard 計分器", () => {
 		await expect(page.getByLabel(/我方目前 0 分/)).toBeVisible();
 	});
 
-	test.fixme(
-		"localStorage 持久化：reload 後分數保留",
-		async ({ page }) => {
-			// 已知產品 bug：`hooks/useScoreboardStore.ts` 中
-			// hydrate effect 與 write effect 在 mount 後皆會執行，
-			// 但 write effect 會以 initial state 覆蓋 localStorage，
-			// 導致 reload 後讀不到先前資料。修復後可移除 .fixme。
+	test("localStorage 持久化：reload 後分數保留", async ({ page }) => {
 			await page.goto("/scoreboard");
 			const usButton = page.getByRole("button", { name: /我方贏這一球/ });
 			await usButton.click();
