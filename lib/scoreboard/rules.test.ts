@@ -59,6 +59,20 @@ describe("isGameWon", () => {
 	});
 });
 
+function doublesPlaying(overrides: Partial<ScoreboardState> = {}): ScoreboardState {
+	return {
+		mode: "doubles",
+		scores: { us: 3, them: 2 },
+		servingTeam: "us",
+		serverNumber: 1,
+		isFirstServiceOfGame: false,
+		history: [],
+		status: "playing",
+		winner: null,
+		...overrides,
+	};
+}
+
 describe("applyRallyResult — 單打", () => {
 	it("發球方贏 → 該方 +1，發球權不變", () => {
 		const state = singlesInitial();
@@ -74,5 +88,31 @@ describe("applyRallyResult — 單打", () => {
 		expect(next.scores).toEqual({ us: 3, them: 2 });
 		expect(next.servingTeam).toBe("them");
 		expect(next.serverNumber).toBe(1);
+	});
+});
+
+describe("applyRallyResult — 雙打標準輪換", () => {
+	it("發球方 #1 輸 → 同隊 #2 接手", () => {
+		const state = doublesPlaying({ serverNumber: 1 });
+		const next = applyRallyResult(state, "them");
+		expect(next.servingTeam).toBe("us");
+		expect(next.serverNumber).toBe(2);
+		expect(next.scores).toEqual({ us: 3, them: 2 });
+	});
+
+	it("發球方 #2 輸 → side-out 給對方，serverNumber 重置為 1", () => {
+		const state = doublesPlaying({ serverNumber: 2 });
+		const next = applyRallyResult(state, "them");
+		expect(next.servingTeam).toBe("them");
+		expect(next.serverNumber).toBe(1);
+		expect(next.scores).toEqual({ us: 3, them: 2 });
+	});
+
+	it("發球方贏 → 該方 +1，serverNumber 不變（左右場由分數奇偶推導）", () => {
+		const state = doublesPlaying({ serverNumber: 2 });
+		const next = applyRallyResult(state, "us");
+		expect(next.scores).toEqual({ us: 4, them: 2 });
+		expect(next.servingTeam).toBe("us");
+		expect(next.serverNumber).toBe(2);
 	});
 });

@@ -23,7 +23,7 @@ export function applyRallyResult(
 	state: ScoreboardState,
 	rallyWinner: Team,
 ): ScoreboardState {
-	// 發球方贏 → 該方 +1，發球權不變
+	// 發球方贏 → 該方 +1
 	if (rallyWinner === state.servingTeam) {
 		return {
 			...state,
@@ -31,7 +31,20 @@ export function applyRallyResult(
 			isFirstServiceOfGame: false,
 		};
 	}
-	// 接發方贏 → side-out（單打恒 side-out；雙打分支於 Task 5 加）
+	// 接發方贏
+	// 雙打 + 非開賽起手 + 目前是 #1 → 同隊 #2 接手
+	if (
+		state.mode === "doubles" &&
+		!state.isFirstServiceOfGame &&
+		state.serverNumber === 1
+	) {
+		return {
+			...state,
+			serverNumber: 2,
+			isFirstServiceOfGame: false,
+		};
+	}
+	// 其餘情況 → side-out
 	return {
 		...state,
 		servingTeam: rallyWinner,
