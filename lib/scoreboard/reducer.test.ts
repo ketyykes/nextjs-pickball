@@ -133,3 +133,26 @@ describe("scoreboardReducer — UNDO", () => {
 		expect(undone.history).toEqual([]);
 	});
 });
+
+describe("scoreboardReducer — RESET", () => {
+	it("RESET 保留 mode 與 firstServer，清空分數與 history、status 回 setup", () => {
+		const state: ScoreboardState = {
+			...createInitialState({ mode: "singles", firstServer: "them" }),
+			scores: { us: 11, them: 7 },
+			status: "finished",
+			winner: "us",
+			history: [
+				{ type: "RALLY_WON", winner: "us" },
+				{ type: "RALLY_WON", winner: "us" },
+			],
+		};
+		const next = scoreboardReducer(state, { type: "RESET" });
+		expect(next.mode).toBe("singles");
+		expect(next.firstServer).toBe("them");
+		expect(next.servingTeam).toBe("them");
+		expect(next.scores).toEqual({ us: 0, them: 0 });
+		expect(next.status).toBe("setup");
+		expect(next.winner).toBeNull();
+		expect(next.history).toEqual([]);
+	});
+});

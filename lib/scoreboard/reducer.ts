@@ -31,13 +31,7 @@ export function createInitialState(
 }
 
 /**
- * 記分板 reducer。
- *
- * 目前只處理 setup 階段的兩個設定 action：
- * - SET_MODE：切換單/雙打模式
- * - SET_FIRST_SERVER：切換先發球隊
- *
- * 其他 action（RALLY_WON / UNDO / RESET / HYDRATE）待 Task 8-10 實作。
+ * 記分板 reducer：處理 setup toggle、rally 計分、undo、reset、hydrate。
  */
 export function scoreboardReducer(
 	state: ScoreboardState,
@@ -91,8 +85,16 @@ export function scoreboardReducer(
 			}
 			return rebuilt;
 		}
+		case "RESET": {
+			return createInitialState({
+				mode: state.mode,
+				firstServer: state.firstServer,
+			});
+		}
+		case "HYDRATE": {
+			return action.state;
+		}
 		default:
-			// 其他 action 暫時 pass through，待後續 task 實作
 			return state;
 	}
 }
