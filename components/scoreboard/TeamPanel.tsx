@@ -32,13 +32,14 @@ export function TeamPanel({ team, label, state, disabled, onWinRally }: TeamPane
 			>
 				{score}
 			</div>
-			{isServing && (
+			{/* 永遠保留 indicator slot 佔位（含上下 gap）；非發球方用 invisible 隱藏內容但保留版面，避免「贏這球+」按鈕在發球權切換時上下跳動。aria-hidden 讓讀屏不重複讀出隱藏字串 */}
+			<div className={cn(!isServing && "invisible")} aria-hidden={!isServing}>
 				<ServeIndicator
 					servingTeamScore={score}
 					serverNumber={state.serverNumber}
 					showServerNumber={state.mode === "doubles"}
 				/>
-			)}
+			</div>
 			<Button
 				size="lg"
 				disabled={disabled}
