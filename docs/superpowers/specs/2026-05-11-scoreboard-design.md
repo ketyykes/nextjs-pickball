@@ -125,29 +125,43 @@ lib/
 
 ### 5.1 型別
 
+zod schema 為單一事實來源；TS 型別以 `z.infer` 推導，避免 schema 與 interface 雙重維護。
+
 ```ts
 // lib/scoreboard/types.ts
+import { z } from 'zod';
 
-export type Mode = 'singles' | 'doubles';
-export type Team = 'us' | 'them';
-export type Status = 'setup' | 'playing' | 'finished';
-export type ServerNumber = 1 | 2;
-export type ServeSide = 'right' | 'left';
+export const ModeSchema = z.enum(['singles', 'doubles']);
+export const TeamSchema = z.enum(['us', 'them']);
+export const StatusSchema = z.enum(['setup', 'playing', 'finished']);
+export const ServerNumberSchema = z.union([z.literal(1), z.literal(2)]);
+export const ServeSideSchema = z.enum(['right', 'left']);
 
-export interface ScoreboardState {
-  mode: Mode;
-  scores: Record<Team, number>;
-  servingTeam: Team;
-  serverNumber: ServerNumber;        // 雙打有意義；單打恒 1
-  isFirstServiceOfGame: boolean;     // 0-0-2 起手規則
-  history: ScoreEvent[];             // for undo
-  status: Status;
-  winner: Team | null;
-}
+export const ScoreEventSchema = z.object({
+  type: z.literal('RALLY_WON'),
+  winner: TeamSchema,
+});
 
-export type ScoreEvent =
-  | { type: 'RALLY_WON'; winner: Team };
+export const ScoreboardStateSchema = z.object({
+  mode: ModeSchema,
+  scores: z.object({ us: z.number().int().nonnegative(), them: z.number().int().nonnegative() }),
+  servingTeam: TeamSchema,
+  serverNumber: ServerNumberSchema,           // 雙打有意義；單打恒 1
+  isFirstServiceOfGame: z.boolean(),          // 0-0-2 起手規則
+  history: z.array(ScoreEventSchema),         // for undo
+  status: StatusSchema,
+  winner: TeamSchema.nullable(),
+});
 
+export type Mode = z.infer<typeof ModeSchema>;
+export type Team = z.infer<typeof TeamSchema>;
+export type Status = z.infer<typeof StatusSchema>;
+export type ServerNumber = z.infer<typeof ServerNumberSchema>;
+export type ServeSide = z.infer<typeof ServeSideSchema>;
+export type ScoreEvent = z.infer<typeof ScoreEventSchema>;
+export type ScoreboardState = z.infer<typeof ScoreboardStateSchema>;
+
+// Action 不需驗證（純記憶體型別，不會落 localStorage）
 export type Action =
   | { type: 'SET_MODE'; mode: Mode }
   | { type: 'SET_FIRST_SERVER'; team: Team }
@@ -345,9 +359,10 @@ checkGameEnd(state): { status, winner }
 
 ### 8.2 Schema 驗證
 
-- 用自寫 type guard（專案目前未安裝 zod，避免引入新 dep）。
+- 用 zod 定義 `ScoreboardStateSchema` 於 `lib/scoreboard/types.ts`，TS 型別以 `z.infer` 推導，避免 schema 與型別雙重維護。
+- `lib/scoreboard/storage.ts` import schema 做 `safeParse`，驗證通過才回傳 state。
 - 驗證項目：頂層欄位齊全、enum 值合法（mode、status、winner）、scores 為非負整數、serverNumber ∈ {1,2}、history 為合法 ScoreEvent 陣列。
-- 驗證失敗 → 清除 key + 用 default initial state。
+- 驗證失敗 → 清除 key + 用 default initial state；同時 `console.warn` 記錄錯誤（不阻塞使用者）。
 
 ### 8.3 邊界情境
 
@@ -436,7 +451,7 @@ checkGameEnd(state): { status, winner }
   - `dialog`（GameOverDialog）
   - `alert-dialog`（Reset 確認）
   - `select`（mode、firstServer toggle）
-- 不引入新的 npm 套件（schema 驗證走自寫 type guard）。
+- 新增 npm 套件：`zod`（已安裝 4.4.3）— 用於 localStorage state 的 schema 驗證與 TS 型別推導。
 
 ## 13. Bundle / 效能
 
