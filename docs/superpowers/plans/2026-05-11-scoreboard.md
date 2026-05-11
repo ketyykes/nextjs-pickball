@@ -27,7 +27,7 @@
 **Files:**
 - Create: `lib/scoreboard/types.ts`
 
-- [ ] **Step 1: 建立 types.ts**
+- [x] **Step 1: 建立 types.ts**
 
 ```ts
 // lib/scoreboard/types.ts
@@ -76,12 +76,12 @@ export type Action =
 	| { type: "HYDRATE"; state: ScoreboardState };
 ```
 
-- [ ] **Step 2: TypeCheck 確認無錯**
+- [x] **Step 2: TypeCheck 確認無錯**
 
 Run: `pnpm tsc --noEmit`
 Expected: 無錯（可能有現存非相關警告，本 task 新增的 types.ts 應 pass）
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add lib/scoreboard/types.ts
@@ -96,7 +96,7 @@ git commit -m "feat(scoreboard): 建立 zod schema 與 inferred types"
 - Create: `lib/scoreboard/rules.test.ts`
 - Create: `lib/scoreboard/rules.ts`
 
-- [ ] **Step 1: 寫失敗測試**
+- [x] **Step 1: 寫失敗測試**
 
 ```ts
 // lib/scoreboard/rules.test.ts
@@ -118,12 +118,12 @@ describe("getServeSide", () => {
 });
 ```
 
-- [ ] **Step 2: Run red**
+- [x] **Step 2: Run red**
 
 Run: `pnpm test -- --run lib/scoreboard/rules.test.ts`
 Expected: FAIL（`Cannot find module './rules'` 或 `getServeSide is not a function`）
 
-- [ ] **Step 3: 最小實作**
+- [x] **Step 3: 最小實作**
 
 ```ts
 // lib/scoreboard/rules.ts
@@ -135,12 +135,12 @@ export function getServeSide(servingTeamScore: number): ServeSide {
 }
 ```
 
-- [ ] **Step 4: Run green**
+- [x] **Step 4: Run green**
 
 Run: `pnpm test -- --run lib/scoreboard/rules.test.ts`
 Expected: PASS 2 tests
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add lib/scoreboard/rules.ts lib/scoreboard/rules.test.ts
@@ -155,7 +155,7 @@ git commit -m "feat(scoreboard): 加入 getServeSide 純函式"
 - Modify: `lib/scoreboard/rules.test.ts`
 - Modify: `lib/scoreboard/rules.ts`
 
-- [ ] **Step 1: 加失敗測試**
+- [x] **Step 1: 加失敗測試**
 
 於 `rules.test.ts` 檔尾追加：
 
@@ -184,12 +184,12 @@ describe("isGameWon", () => {
 });
 ```
 
-- [ ] **Step 2: Run red**
+- [x] **Step 2: Run red**
 
 Run: `pnpm test -- --run lib/scoreboard/rules.test.ts`
 Expected: FAIL（`isGameWon is not a function`）
 
-- [ ] **Step 3: 加實作**
+- [x] **Step 3: 加實作**
 
 於 `rules.ts` 檔尾追加：
 
@@ -210,12 +210,12 @@ export function isGameWon(scores: { us: number; them: number }): {
 }
 ```
 
-- [ ] **Step 4: Run green**
+- [x] **Step 4: Run green**
 
 Run: `pnpm test -- --run lib/scoreboard/rules.test.ts`
 Expected: PASS 6 tests
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add lib/scoreboard/rules.ts lib/scoreboard/rules.test.ts
