@@ -16,7 +16,7 @@ export function TocBar() {
 	return (
 		<nav
 			className={cn(
-				"fixed top-0 right-0 left-0 z-[100] border-b transition-[background-color,box-shadow,backdrop-filter,border-color] duration-300",
+				"fixed top-14 right-0 left-0 z-[100] border-b transition-[background-color,box-shadow,backdrop-filter,border-color] duration-300",
 				pastHero
 					? "border-border bg-background/90 shadow-md backdrop-blur"
 					: "border-white/10 bg-slate-900/20 backdrop-blur-sm",
