@@ -72,3 +72,36 @@ describe("scoreboardReducer — SET_MODE / SET_FIRST_SERVER", () => {
 		expect(next).toBe(state);
 	});
 });
+
+describe("scoreboardReducer — RALLY_WON", () => {
+	it("首次 RALLY_WON 從 setup → playing 並記錄 history", () => {
+		const state = createInitialState();
+		const next = scoreboardReducer(state, { type: "RALLY_WON", winner: "us" });
+		expect(next.status).toBe("playing");
+		expect(next.scores).toEqual({ us: 1, them: 0 });
+		expect(next.history).toEqual([{ type: "RALLY_WON", winner: "us" }]);
+	});
+
+	it("達到勝利條件時 → status=finished, winner 設定", () => {
+		const state: ScoreboardState = {
+			...createInitialState({ mode: "singles" }),
+			scores: { us: 10, them: 5 },
+			status: "playing",
+		};
+		const next = scoreboardReducer(state, { type: "RALLY_WON", winner: "us" });
+		expect(next.status).toBe("finished");
+		expect(next.winner).toBe("us");
+		expect(next.scores).toEqual({ us: 11, them: 5 });
+	});
+
+	it("finished 後 RALLY_WON 被 ignore", () => {
+		const state: ScoreboardState = {
+			...createInitialState(),
+			status: "finished",
+			winner: "us",
+			scores: { us: 11, them: 7 },
+		};
+		const next = scoreboardReducer(state, { type: "RALLY_WON", winner: "them" });
+		expect(next).toBe(state);
+	});
+});

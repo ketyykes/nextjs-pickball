@@ -1,4 +1,5 @@
 import type { Action, Mode, ScoreboardState, Team } from "./types";
+import { applyRallyResult, isGameWon } from "./rules";
 
 /**
  * 建立記分板的初始狀態（immutable factory）。
@@ -61,6 +62,22 @@ export function scoreboardReducer(
 				mode: state.mode,
 				firstServer: action.team,
 			});
+		}
+		case "RALLY_WON": {
+			// finished 後不再處理任何 rally
+			if (state.status === "finished") return state;
+			// 套用 rally 結果（分數 / 發球方輪替）
+			const afterRally = applyRallyResult(state, action.winner);
+			// 將此次 action 記入 history
+			const newHistory = [...state.history, { type: "RALLY_WON" as const, winner: action.winner }];
+			// 判斷是否達到勝利條件
+			const { won, winner } = isGameWon(afterRally.scores);
+			return {
+				...afterRally,
+				history: newHistory,
+				status: won ? "finished" : "playing",
+				winner: won ? winner : null,
+			};
 		}
 		default:
 			// 其他 action 暫時 pass through，待後續 task 實作
