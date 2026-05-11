@@ -116,3 +116,39 @@ describe("applyRallyResult — 雙打標準輪換", () => {
 		expect(next.serverNumber).toBe(2);
 	});
 });
+
+describe("applyRallyResult — 雙打 0-0-2 起手", () => {
+	it("開賽方輸（isFirstServiceOfGame=true, serverNumber=2）→ 直接 side-out", () => {
+		const state: ScoreboardState = {
+			mode: "doubles",
+			scores: { us: 0, them: 0 },
+			servingTeam: "us",
+			serverNumber: 2,
+			isFirstServiceOfGame: true,
+			history: [],
+			status: "setup",
+			winner: null,
+		};
+		const next = applyRallyResult(state, "them");
+		expect(next.servingTeam).toBe("them");
+		expect(next.serverNumber).toBe(1);
+		expect(next.isFirstServiceOfGame).toBe(false);
+	});
+
+	it("開賽方贏 → +1，isFirstServiceOfGame 變 false", () => {
+		const state: ScoreboardState = {
+			mode: "doubles",
+			scores: { us: 0, them: 0 },
+			servingTeam: "us",
+			serverNumber: 2,
+			isFirstServiceOfGame: true,
+			history: [],
+			status: "setup",
+			winner: null,
+		};
+		const next = applyRallyResult(state, "us");
+		expect(next.scores).toEqual({ us: 1, them: 0 });
+		expect(next.serverNumber).toBe(2);
+		expect(next.isFirstServiceOfGame).toBe(false);
+	});
+});
