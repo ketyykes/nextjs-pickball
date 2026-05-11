@@ -21,9 +21,11 @@ describe("isGameWon", () => {
 		expect(isGameWon({ us: 0, them: 0 })).toEqual({ won: false, winner: null });
 	});
 
-	it("達 11 但差距未滿 2 → 未贏（延長賽）", () => {
+	it("達 11 但差距未滿 2 → 未贏（延長賽，雙方領先皆然）", () => {
 		expect(isGameWon({ us: 11, them: 10 })).toEqual({ won: false, winner: null });
 		expect(isGameWon({ us: 12, them: 11 })).toEqual({ won: false, winner: null });
+		expect(isGameWon({ us: 10, them: 11 })).toEqual({ won: false, winner: null });
+		expect(isGameWon({ us: 11, them: 12 })).toEqual({ won: false, winner: null });
 	});
 
 	it("達 11 且差距 ≥ 2 → 我方贏", () => {
@@ -33,5 +35,11 @@ describe("isGameWon", () => {
 
 	it("對方達 11 且差距 ≥ 2 → 對方贏", () => {
 		expect(isGameWon({ us: 7, them: 11 })).toEqual({ won: true, winner: "them" });
+		expect(isGameWon({ us: 11, them: 13 })).toEqual({ won: true, winner: "them" });
+	});
+
+	it("雙方平局 → 未贏", () => {
+		expect(isGameWon({ us: 11, them: 11 })).toEqual({ won: false, winner: null });
+		expect(isGameWon({ us: 12, them: 12 })).toEqual({ won: false, winner: null });
 	});
 });
