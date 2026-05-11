@@ -64,18 +64,17 @@ export function scoreboardReducer(
 			});
 		}
 		case "RALLY_WON": {
-			// finished 後不再處理任何 rally
 			if (state.status === "finished") return state;
-			// 套用 rally 結果（分數 / 發球方輪替）
 			const afterRally = applyRallyResult(state, action.winner);
-			// 將此次 action 記入 history
-			const newHistory = [...state.history, { type: "RALLY_WON" as const, winner: action.winner }];
-			// 判斷是否達到勝利條件
+			// history 直接 push action 物件——action 已具備 ScoreEvent 形狀且為 immutable
+			const newHistory = [...state.history, action];
 			const { won, winner } = isGameWon(afterRally.scores);
 			return {
 				...afterRally,
 				history: newHistory,
-				status: won ? "finished" : "playing",
+				// finished 已在開頭 guard return；此處只可能從 setup 或 playing 進入。
+				// 未結束且原本為 setup → 轉 playing；其他情況維持原 status。
+				status: won ? "finished" : state.status === "setup" ? "playing" : state.status,
 				winner: won ? winner : null,
 			};
 		}
