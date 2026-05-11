@@ -1,5 +1,20 @@
 import { describe, it, expect } from "vitest";
-import { getServeSide, isGameWon } from "./rules";
+import { getServeSide, isGameWon, applyRallyResult } from "./rules";
+import type { ScoreboardState } from "./types";
+
+function singlesInitial(overrides: Partial<ScoreboardState> = {}): ScoreboardState {
+	return {
+		mode: "singles",
+		scores: { us: 0, them: 0 },
+		servingTeam: "us",
+		serverNumber: 1,
+		isFirstServiceOfGame: false,
+		history: [],
+		status: "setup",
+		winner: null,
+		...overrides,
+	};
+}
 
 describe("getServeSide", () => {
 	it("發球方分數偶數時從右場發", () => {
@@ -41,5 +56,23 @@ describe("isGameWon", () => {
 	it("雙方平局 → 未贏", () => {
 		expect(isGameWon({ us: 11, them: 11 })).toEqual({ won: false, winner: null });
 		expect(isGameWon({ us: 12, them: 12 })).toEqual({ won: false, winner: null });
+	});
+});
+
+describe("applyRallyResult — 單打", () => {
+	it("發球方贏 → 該方 +1，發球權不變", () => {
+		const state = singlesInitial();
+		const next = applyRallyResult(state, "us");
+		expect(next.scores).toEqual({ us: 1, them: 0 });
+		expect(next.servingTeam).toBe("us");
+		expect(next.serverNumber).toBe(1);
+	});
+
+	it("接發方贏 → side-out，雙方分數不變", () => {
+		const state = singlesInitial({ scores: { us: 3, them: 2 } });
+		const next = applyRallyResult(state, "them");
+		expect(next.scores).toEqual({ us: 3, them: 2 });
+		expect(next.servingTeam).toBe("them");
+		expect(next.serverNumber).toBe(1);
 	});
 });
