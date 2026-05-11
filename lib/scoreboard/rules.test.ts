@@ -12,6 +12,7 @@ function singlesInitial(overrides: Partial<ScoreboardState> = {}): ScoreboardSta
 		history: [],
 		status: "setup",
 		winner: null,
+		firstServer: "us",
 		...overrides,
 	};
 }
@@ -69,6 +70,7 @@ function doublesPlaying(overrides: Partial<ScoreboardState> = {}): ScoreboardSta
 		history: [],
 		status: "playing",
 		winner: null,
+		firstServer: "us",
 		...overrides,
 	};
 }
@@ -128,6 +130,7 @@ describe("applyRallyResult — 雙打 0-0-2 起手", () => {
 			history: [],
 			status: "setup",
 			winner: null,
+			firstServer: "us",
 		};
 		const next = applyRallyResult(state, "them");
 		expect(next.servingTeam).toBe("them");
@@ -145,6 +148,7 @@ describe("applyRallyResult — 雙打 0-0-2 起手", () => {
 			history: [],
 			status: "setup",
 			winner: null,
+			firstServer: "us",
 		};
 		const next = applyRallyResult(state, "us");
 		expect(next.scores).toEqual({ us: 1, them: 0 });

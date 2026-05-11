@@ -23,6 +23,7 @@ export const ScoreboardStateSchema = z.object({
 	history: z.array(ScoreEventSchema),
 	status: StatusSchema,
 	winner: TeamSchema.nullable(),
+	firstServer: TeamSchema,
 });
 
 export type Mode = z.infer<typeof ModeSchema>;

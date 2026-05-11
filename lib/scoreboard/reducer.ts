@@ -26,6 +26,7 @@ export function createInitialState(
 		history: [],
 		status: "setup",
 		winner: null,
+		firstServer,
 	};
 }
 
@@ -49,9 +50,7 @@ export function scoreboardReducer(
 			// 重新建立初始狀態，保留現有的先發球隊設定
 			return createInitialState({
 				mode: action.mode,
-				// 注意：setup 階段 servingTeam === firstServer，故此處代理可行。
-				// Task 9 加入 state.firstServer 欄位後，這行需改為 firstServer: state.firstServer
-				firstServer: state.servingTeam,
+				firstServer: state.firstServer,
 			});
 		}
 		case "SET_FIRST_SERVER": {
@@ -77,6 +76,20 @@ export function scoreboardReducer(
 				status: won ? "finished" : state.status === "setup" ? "playing" : state.status,
 				winner: won ? winner : null,
 			};
+		}
+		case "UNDO": {
+			// history 為空時不做任何事
+			if (state.history.length === 0) return state;
+			// 移除最後一筆 event，從初始狀態 replay 重建
+			const newHistory = state.history.slice(0, -1);
+			let rebuilt = createInitialState({
+				mode: state.mode,
+				firstServer: state.firstServer,
+			});
+			for (const event of newHistory) {
+				rebuilt = scoreboardReducer(rebuilt, event);
+			}
+			return rebuilt;
 		}
 		default:
 			// 其他 action 暫時 pass through，待後續 task 實作

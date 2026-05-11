@@ -21,6 +21,7 @@ describe("createInitialState", () => {
 		expect(state.servingTeam).toBe("them");
 		expect(state.serverNumber).toBe(1);
 		expect(state.isFirstServiceOfGame).toBe(false);
+		expect(state.firstServer).toBe("them");
 	});
 });
 
@@ -103,5 +104,32 @@ describe("scoreboardReducer — RALLY_WON", () => {
 		};
 		const next = scoreboardReducer(state, { type: "RALLY_WON", winner: "them" });
 		expect(next).toBe(state);
+	});
+});
+
+describe("scoreboardReducer — UNDO", () => {
+	it("空 history 時 UNDO 不變 state", () => {
+		const state = createInitialState();
+		const next = scoreboardReducer(state, { type: "UNDO" });
+		expect(next).toBe(state);
+	});
+
+	it("UNDO 後 state 等於少做一次 RALLY_WON 的結果", () => {
+		const start = createInitialState();
+		const afterOne = scoreboardReducer(start, { type: "RALLY_WON", winner: "us" });
+		const afterTwo = scoreboardReducer(afterOne, { type: "RALLY_WON", winner: "us" });
+		const undone = scoreboardReducer(afterTwo, { type: "UNDO" });
+		expect(undone.scores).toEqual(afterOne.scores);
+		expect(undone.servingTeam).toBe(afterOne.servingTeam);
+		expect(undone.serverNumber).toBe(afterOne.serverNumber);
+		expect(undone.history).toEqual(afterOne.history);
+	});
+
+	it("UNDO 退到開賽時 status 回到 setup", () => {
+		const start = createInitialState();
+		const afterOne = scoreboardReducer(start, { type: "RALLY_WON", winner: "us" });
+		const undone = scoreboardReducer(afterOne, { type: "UNDO" });
+		expect(undone.status).toBe("setup");
+		expect(undone.history).toEqual([]);
 	});
 });
