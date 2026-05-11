@@ -60,6 +60,7 @@ next-env.d.ts
 /test-results/
 /playwright/.cache/
 /blob-report/
+.playwright-cli/
 
 # design prototype (design reference, not source)
 docs/pickleball-guide.html
