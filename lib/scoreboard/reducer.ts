@@ -48,6 +48,8 @@ export function scoreboardReducer(
 			// 重新建立初始狀態，保留現有的先發球隊設定
 			return createInitialState({
 				mode: action.mode,
+				// 注意：setup 階段 servingTeam === firstServer，故此處代理可行。
+				// Task 9 加入 state.firstServer 欄位後，這行需改為 firstServer: state.firstServer
 				firstServer: state.servingTeam,
 			});
 		}

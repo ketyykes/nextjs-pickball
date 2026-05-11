@@ -56,4 +56,19 @@ describe("scoreboardReducer — SET_MODE / SET_FIRST_SERVER", () => {
 		});
 		expect(next).toBe(state);
 	});
+
+	it("finished 階段 ignore SET_MODE", () => {
+		const state: ScoreboardState = { ...createInitialState(), status: "finished" };
+		const next = scoreboardReducer(state, { type: "SET_MODE", mode: "singles" });
+		expect(next).toBe(state);
+	});
+
+	it("finished 階段 ignore SET_FIRST_SERVER", () => {
+		const state: ScoreboardState = { ...createInitialState(), status: "finished" };
+		const next = scoreboardReducer(state, {
+			type: "SET_FIRST_SERVER",
+			team: "them",
+		});
+		expect(next).toBe(state);
+	});
 });
