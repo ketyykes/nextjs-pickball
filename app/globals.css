@@ -107,6 +107,10 @@
   .animate-bounce-down {
     animation: bounceDown 2s ease-in-out infinite;
   }
+
+  .animate-rally-feedback {
+    animation: rallyFeedback 1.6s ease-out forwards;
+  }
 }
 
 @keyframes fadeIn {
@@ -157,6 +161,28 @@
   }
   50% {
     transform: translateX(-50%) translateY(10px);
+  }
+}
+
+/*
+  Scoreboard rally feedback toast：
+  - 用於提示 side-out（換對方發球）或換發球員（雙打 #1↔#2）等不會立即加分的事件
+  - 從上方滑入、停留約 1s、再滑出；總長 1.6s
+  - translate(-50%) 來自父層 left-1/2 -translate-x-1/2，故 keyframe 內只動 Y 與 opacity
+*/
+@keyframes rallyFeedback {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -12px);
+  }
+  15%,
+  75% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -12px);
   }
 }
 
