@@ -26,7 +26,7 @@ export function TeamPanel({ team, label, state, disabled, onWinRally }: TeamPane
 				aria-live="polite"
 				aria-label={`${label}目前 ${score} 分`}
 				className={cn(
-					"font-bebas-neue text-[10rem] leading-none md:text-[14rem]",
+					"font-bebas text-[10rem] leading-none md:text-[14rem]",
 					isServing ? "text-lime-400" : "text-foreground",
 				)}
 			>

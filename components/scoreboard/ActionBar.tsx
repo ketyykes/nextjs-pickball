@@ -45,7 +45,6 @@ export function ActionBar({ canUndo, onUndo, onReset }: ActionBarProps) {
 						<AlertDialogAction
 							onClick={() => {
 								onReset();
-								setConfirmOpen(false);
 							}}
 						>
 							確定重置
