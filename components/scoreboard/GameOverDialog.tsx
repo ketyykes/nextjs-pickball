@@ -19,14 +19,19 @@ interface GameOverDialogProps {
 }
 
 // 比賽結束時自動開啟；提供「再來一局」與「關閉」。
-// 「關閉」以 dismissedAtStatus 記錄被關閉時的 status；
-// status 不再是 "finished" 後（例如 RESET），下次進入 "finished" 時 dialog 會自動重開。
+// 「關閉」用 dismissed 本地狀態暫時隱藏 dialog（仍保留 finished status 讓使用者檢視終局分數）。
+// status 變動時用 React 認可的「previous render」pattern in-render reset dismissed，無需 useEffect。
 export function GameOverDialog({ state, onPlayAgain }: GameOverDialogProps) {
-	// null 表示尚未關閉；存入被關閉時的 status 讓 open 計算式自動 reset
-	const [dismissedAtStatus, setDismissedAtStatus] = useState<string | null>(null);
+	const [dismissed, setDismissed] = useState(false);
+	const [prevStatus, setPrevStatus] = useState(state.status);
 
-	// 只在目前 status 與被關閉時相同才視為 dismissed，避免需要 effect 來 reset
-	const dismissed = dismissedAtStatus === state.status;
+	// React docs: storing information from previous renders
+	// https://react.dev/reference/react/useState#storing-information-from-previous-renders
+	if (prevStatus !== state.status) {
+		setPrevStatus(state.status);
+		setDismissed(false);
+	}
+
 	const open = state.status === "finished" && !dismissed;
 	const winnerLabel = state.winner === "us" ? "我方獲勝" : "對方獲勝";
 
@@ -34,7 +39,7 @@ export function GameOverDialog({ state, onPlayAgain }: GameOverDialogProps) {
 		<Dialog
 			open={open}
 			onOpenChange={(o) => {
-				if (!o) setDismissedAtStatus(state.status);
+				if (!o) setDismissed(true);
 			}}
 		>
 			<DialogContent>
@@ -45,17 +50,10 @@ export function GameOverDialog({ state, onPlayAgain }: GameOverDialogProps) {
 					</DialogDescription>
 				</DialogHeader>
 				<DialogFooter>
-					<Button variant="outline" onClick={() => setDismissedAtStatus(state.status)}>
+					<Button variant="outline" onClick={() => setDismissed(true)}>
 						關閉
 					</Button>
-					<Button
-						onClick={() => {
-							setDismissedAtStatus(null);
-							onPlayAgain();
-						}}
-					>
-						再來一局
-					</Button>
+					<Button onClick={onPlayAgain}>再來一局</Button>
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>
