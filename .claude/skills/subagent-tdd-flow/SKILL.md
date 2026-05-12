@@ -100,7 +100,34 @@ disable-model-invocation: true
 **Loop 終止條件（取先到）：**
 
 1. **連續兩次** review 結果都「**只剩低**或無 issues」
-2. 累計派出 fix 次數 = 3（保護機制；若仍有高/中，回報為 DONE_WITH_CONCERNS 並讓使用者決定）
+2. 累計派出 fix 次數 = 3（保護機制）
+   - 若到第 3 次後 reviewer 仍報「中」或「高」issues → **必須產生 escalation markdown**（見下節），然後標記該 task 為 DONE_WITH_CONCERNS 並繼續下個 task
+
+### 3.1 Escalation Markdown（達 3 次 fix 上限後）
+
+當第 3 次 fix 結束、re-review 仍含「中」或「高」issues 時，**必須**把未解問題寫成 markdown 給人類審查，不能默默吞掉。
+
+**檔案路徑：** `docs/superpowers/review-escalations/YYYY-MM-DD-<feature-name>-task-<N>.md`（如目錄不存在直接 mkdir）
+
+**內容必含：**
+
+1. Task 編號與標題
+2. SHA 範圍（base → 最後 fix commit）
+3. 三輪 fix 各自做了什麼 + 對應 commit SHA
+4. **未解的「中/高」issues 清單**，每項含：
+   - 等級（中 / 高）
+   - 位置（檔案 + 行號）
+   - reviewer 原話摘要
+   - 為何沒修（如已試過某方案失敗、或 reviewer 主張間需取捨）
+5. 對使用者的建議下一步（如「考慮放棄此 task 改 design」、「接受現狀進下 task」）
+
+模板見 [escalation-template](references/escalation-template.md)。
+
+寫完後**在主對話中明確點名告知使用者**：
+
+> Task {{N}} 達 3 次 fix 上限仍有未解 issues，已寫到 `docs/superpowers/review-escalations/{{file}}.md`，請審閱後告知處理方式。我會先標記 DONE_WITH_CONCERNS 並繼續下個 task。
+
+派 fix 時：
 
 派 fix 時：
 
@@ -135,7 +162,7 @@ E2E agent 回報後：
 - 全部新增 commit 的 oneline 清單（`git log --oneline <base>..HEAD`）
 - 單元測試 / E2E / lint / build 通過數
 - 過程中 reviewer 抓到的問題清單（特別是 critical 等級被擋下的）
-- 任何 DONE_WITH_CONCERNS 的 task + 未解原因
+- 任何 DONE_WITH_CONCERNS 的 task + 未解原因 + 對應的 escalation markdown 路徑（若有）
 - 接下來建議（如「可以開 dev server 試試」、「要不要 PR」）
 
 ## 重要原則
@@ -160,7 +187,7 @@ Sub-agent 沒有上下文，讓它去讀 plan 是浪費 token 又容易讀偏。
 
 ### 累計 fix 次數 3 次是保護線
 
-不是目標。理想是 1 次 fix 後就「只剩低」過關。3 次仍有高/中 → 通常意味設計層級問題，停下回報使用者，不要硬撐。
+不是目標。理想是 1 次 fix 後就「只剩低」過關。3 次仍有高/中 → 通常意味設計層級問題，**必須產生 escalation markdown 給人類審查**（見 §3.1），不要默默吞掉，也不要硬撐第 4 輪。
 
 ### 別忽略 reviewer 抓到的 Critical
 
@@ -174,6 +201,8 @@ Sub-agent 沒有上下文，讓它去讀 plan 是浪費 token 又容易讀偏。
 - ❌ Reviewer 抓到「中/高」卻 APPROVED 跳過（這破壞 pipeline 信用）
 - ❌ Fix prompt 沒有點明「只動哪幾處」、放任 agent 自由發揮
 - ❌ E2E 失敗就回頭再跑 review loop（E2E 失敗該直接派 fix，不需再 review）
+- ❌ **達 3 次 fix 上限卻沒寫 escalation markdown**（這是讓使用者失去信任的最快方式——他們以為過關但其實還有 critical issue）
+- ❌ Escalation markdown 寫得太簡略（只寫「還有 issues」沒寫「是什麼 issues / 為何沒修」）
 
 ## 對應參考檔
 
@@ -181,3 +210,4 @@ Sub-agent 沒有上下文，讓它去讀 plan 是浪費 token 又容易讀偏。
 - [reviewer-prompt-template](references/reviewer-prompt-template.md) — code-reviewer-readonly dispatch 骨架
 - [fix-prompt-template](references/fix-prompt-template.md) — 修正派遣骨架
 - [e2e-prompt-template](references/e2e-prompt-template.md) — playwright-e2e-runner dispatch 骨架
+- [escalation-template](references/escalation-template.md) — 達 3 次 fix 上限後的人類審查 markdown 模板

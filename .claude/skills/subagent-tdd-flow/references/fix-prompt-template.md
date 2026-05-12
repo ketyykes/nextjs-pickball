@@ -97,7 +97,7 @@ fix agent 回報 DONE 後：
 3. 依新的 reviewer 結果決定：
    - 連續第二次「只剩低/無 issues」→ APPROVED，進下個 task
    - 仍有高/中 → 再派 fix（累計次數 +1）
-   - 累計達 3 次仍有高/中 → 停下回報使用者，標記 DONE_WITH_CONCERNS
+   - 累計達 3 次仍有高/中 → **產生 escalation markdown**（見 [escalation-template](escalation-template.md)）寫到 `docs/superpowers/review-escalations/`，主對話通知使用者後標記 DONE_WITH_CONCERNS 並進下個 task。不要硬撐第 4 輪，也不要默默吞掉問題。
 ```
 
 ## 常見誤用
