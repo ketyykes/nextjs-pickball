@@ -1,6 +1,7 @@
 ---
 name: subagent-tdd-flow
 description: 用 subagent-driven 流程逐項執行實作 plan，每個 task 派 nextjs-expert 走 TDD（測試先行），再派 code-reviewer-readonly 按低/中/高分級審查，必要時派 nextjs-expert 修正（連續兩次只剩「低」或累計 3 次修正即停），最後派 playwright-e2e-runner 跑 E2E。當使用者說「用這個 workflow 執行 plan」、「subagent driven 走 TDD」、「跑完 plan 並做 review 與 E2E」、「按 plan 分派 nextjs-expert 並 code review」等情境時觸發。也適用於已有 docs/superpowers/plans/ 下的 plan 檔、想用既定 multi-agent pipeline 推進實作的情境。
+disable-model-invocation: true
 ---
 
 # Subagent-Driven TDD Workflow
@@ -89,12 +90,12 @@ description: 用 subagent-driven 流程逐項執行實作 plan，每個 task 派
 
 讀完 reviewer 回報後，依下表決定：
 
-| Reviewer 結果 | 動作 |
-|---|---|
-| 有「高」 | **必派 fix**（不論累計次數，除非已 3 次仍未解），把高列為必修、中為建議 |
-| 沒高、有「中」 | 派 fix（除非累計達 3 次） |
-| 只有「低」 | 看是否「連續第二次只剩低」→ 是則**停 fix**，標記 APPROVED；否則仍派一輪 fix 把低項清掉 |
-| 無 issues | 直接 APPROVED |
+| Reviewer 結果  | 動作                                                                                   |
+| -------------- | -------------------------------------------------------------------------------------- |
+| 有「高」       | **必派 fix**（不論累計次數，除非已 3 次仍未解），把高列為必修、中為建議                |
+| 沒高、有「中」 | 派 fix（除非累計達 3 次）                                                              |
+| 只有「低」     | 看是否「連續第二次只剩低」→ 是則**停 fix**，標記 APPROVED；否則仍派一輪 fix 把低項清掉 |
+| 無 issues      | 直接 APPROVED                                                                          |
 
 **Loop 終止條件（取先到）：**
 
