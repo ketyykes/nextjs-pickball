@@ -6,7 +6,7 @@
 
 ### Requirement: 首頁顯示完整匹克球指南
 
-系統 SHALL 在路由 `/` 直接渲染完整匹克球新手指南，包含 Hero、TOC、Part 01（規則 5 段）、Part 02（選購 5 段）、Conclusion 區塊，與原型 `pickleball-guide.html` 結構一致。TocBar SHALL 以 fixed overlay 方式於頁面載入即顯示於視窗頂端，而非 sticky（非捲動後才出現）。
+系統 SHALL 在路由 `/` 直接渲染完整匹克球新手指南，包含 Hero、TOC、Part 01（規則 5 段）、Part 02（選購 5 段）、Conclusion 區塊，與原型 `pickleball-guide.html` 結構一致。TocBar SHALL 以 fixed overlay 方式於頁面載入即顯示於視窗頂端，而非 sticky（非捲動後才出現）。TocBar SHALL 使用 `top-14`，固定在 SiteNavbar（高度 h-14 = 56px）下方，不與 Navbar 重疊。
 
 #### Scenario: 訪問首頁可看到 Hero badge 與主標題
 - **GIVEN** 使用者開啟 `/`
@@ -17,6 +17,11 @@
 - **GIVEN** 使用者開啟 `/`
 - **WHEN** 頁面載入完成且 `window.scrollY === 0`
 - **THEN** TocBar 即時可見於視窗頂端，列出 court / serve / scoring / fouls / kitchen / materials / specs / brands / tw-market / starter 共 10 個錨點連結
+
+#### Scenario: TocBar 位置（有 SiteNavbar 時）
+
+- **WHEN** 使用者瀏覽首頁（`/`）
+- **THEN** TocBar 顯示在 viewport top + 56px 的位置，SiteNavbar 佔據最上方 56px
 
 #### Scenario: 每個 section 都有對應錨點 id
 - **GIVEN** 頁面渲染完成
