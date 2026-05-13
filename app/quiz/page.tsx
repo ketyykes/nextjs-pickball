@@ -1,17 +1,6 @@
 import type { Metadata } from "next";
-import dynamic from "next/dynamic";
 
-// 使用 dynamic import + ssr:false 解決 Math.random() 造成的 hydration mismatch
-// QuizShell 含隨機抽題邏輯，無 SEO 需求，完全跳過 SSR 即可
-const QuizShell = dynamic(
-	() => import("@/components/quiz/QuizShell").then((m) => m.QuizShell),
-	{
-		ssr: false,
-		loading: () => (
-			<div className="animate-pulse h-64 rounded-lg bg-muted" />
-		),
-	},
-);
+import { QuizClient } from "./QuizClient";
 
 export const metadata: Metadata = {
 	title: "規則隨堂測驗 | 匹克球指南",
@@ -30,7 +19,7 @@ export default function QuizPage() {
 						隨機抽取 10 題，測驗你對匹克球規則的掌握程度
 					</p>
 				</div>
-				<QuizShell />
+				<QuizClient />
 			</div>
 		</div>
 	);

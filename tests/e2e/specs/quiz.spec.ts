@@ -7,10 +7,8 @@ import { test, expect } from "@playwright/test";
 //   C. 完整答完 10 題後顯示成績
 //   D. 再試一次回到第一題
 //
-// 已知產品問題（不阻擋 smoke）：
-//   useQuiz 使用 Math.random() 初始化題庫，造成 SSR/CSR hydration mismatch。
-//   React 會自動重新 render，功能仍正常，但 pageerror 會觸發 hydration warning。
-//   測試中收集此錯誤並於結束時輸出，等待 hydration 完成（waitForFunction）後再互動。
+// QuizShell 透過 dynamic({ ssr: false }) 載入以避免 Math.random() 造成的 hydration mismatch；
+// 測試中 hydrationErrors 必須為 0 以防退化（dynamic ssr:false 被誤改回 SSR 即會觸發此斷言）。
 
 /** 等待 hydration mismatch 解決：確認頁面上不再有 hydration 相關的 loading 狀態 */
 async function waitForHydration(page: import("@playwright/test").Page) {
@@ -20,7 +18,7 @@ async function waitForHydration(page: import("@playwright/test").Page) {
 
 test.describe("/quiz 規則隨堂測驗", () => {
 	// 收集測試期間的 browser console errors
-	// hydration mismatch 是已知產品問題，收集後輸出但不中斷 smoke 流程
+	// hydration mismatch 被分流到獨立陣列，於每個 test 結尾以 toHaveLength(0) 斷言
 	const setupConsoleMonitor = (page: import("@playwright/test").Page) => {
 		const consoleErrors: string[] = [];
 		const pageErrors: string[] = [];
@@ -37,7 +35,7 @@ test.describe("/quiz 規則隨堂測驗", () => {
 
 		page.on("pageerror", (error) => {
 			const msg = error.message;
-			// 分類：hydration mismatch 是已知產品問題，其餘為真正錯誤
+			// 分類：hydration mismatch 與其他錯誤分流，便於精準斷言與診斷
 			if (msg.includes("Hydration failed") || msg.includes("hydration")) {
 				hydrationErrors.push(msg.slice(0, 200));
 			} else {
@@ -56,9 +54,7 @@ test.describe("/quiz 規則隨堂測驗", () => {
 		await expect(page).toHaveURL(/\/quiz$/);
 		await waitForHydration(page);
 
-		if (hydrationErrors.length > 0) {
-			console.warn("[已知產品問題] Hydration mismatch（Math.random 造成 SSR/CSR 不一致）:", hydrationErrors[0]);
-		}
+		expect(hydrationErrors, `Hydration mismatch（應透過 dynamic ssr:false 消除）: ${hydrationErrors.join(", ")}`).toHaveLength(0);
 
 		// 非 hydration 的嚴重錯誤才中斷測試
 		expect(consoleErrors, `Console errors: ${consoleErrors.join(", ")}`).toHaveLength(0);
@@ -85,9 +81,7 @@ test.describe("/quiz 規則隨堂測驗", () => {
 			page.getByRole("button", { name: /下一題|看結果/ }),
 		).toBeVisible();
 
-		if (hydrationErrors.length > 0) {
-			console.warn("[已知產品問題] Hydration mismatch（Math.random 造成 SSR/CSR 不一致）:", hydrationErrors[0]);
-		}
+		expect(hydrationErrors, `Hydration mismatch（應透過 dynamic ssr:false 消除）: ${hydrationErrors.join(", ")}`).toHaveLength(0);
 
 		expect(consoleErrors, `Console errors: ${consoleErrors.join(", ")}`).toHaveLength(0);
 		expect(pageErrors, `非 hydration 的 Page errors: ${pageErrors.join(", ")}`).toHaveLength(0);
@@ -121,9 +115,7 @@ test.describe("/quiz 規則隨堂測驗", () => {
 		// 「再試一次」按鈕存在
 		await expect(page.getByRole("button", { name: "再試一次" })).toBeVisible();
 
-		if (hydrationErrors.length > 0) {
-			console.warn("[已知產品問題] Hydration mismatch（Math.random 造成 SSR/CSR 不一致）:", hydrationErrors[0]);
-		}
+		expect(hydrationErrors, `Hydration mismatch（應透過 dynamic ssr:false 消除）: ${hydrationErrors.join(", ")}`).toHaveLength(0);
 
 		expect(consoleErrors, `Console errors: ${consoleErrors.join(", ")}`).toHaveLength(0);
 		expect(pageErrors, `非 hydration 的 Page errors: ${pageErrors.join(", ")}`).toHaveLength(0);
@@ -156,9 +148,7 @@ test.describe("/quiz 規則隨堂測驗", () => {
 		// 回到第一題
 		await expect(page.getByText("第 1 題，共 10 題")).toBeVisible();
 
-		if (hydrationErrors.length > 0) {
-			console.warn("[已知產品問題] Hydration mismatch（Math.random 造成 SSR/CSR 不一致）:", hydrationErrors[0]);
-		}
+		expect(hydrationErrors, `Hydration mismatch（應透過 dynamic ssr:false 消除）: ${hydrationErrors.join(", ")}`).toHaveLength(0);
 
 		expect(consoleErrors, `Console errors: ${consoleErrors.join(", ")}`).toHaveLength(0);
 		expect(pageErrors, `非 hydration 的 Page errors: ${pageErrors.join(", ")}`).toHaveLength(0);
