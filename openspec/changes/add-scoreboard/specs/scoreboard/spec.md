@@ -66,7 +66,7 @@
 #### Scenario: 分數自動保存
 
 - **WHEN** 使用者更新分數（dispatch RALLY_WON / UNDO / RESET）
-- **THEN** 當前 state 寫入 `localStorage["scoreboard:current:v1"]`（zod 驗證後序列化）
+- **THEN** 當前 state 寫入 `localStorage["scoreboard:current:v1"]`（zod 驗證後序列化），保存內容含分數、發球狀態、history、`mode`、`firstServer`（起手方設定，UNDO replay 必要）
 
 #### Scenario: 頁面重整回復
 
