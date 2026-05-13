@@ -11,6 +11,7 @@ export type TrueFalseQuestion = {
   id: string
   type: 'true-false'
   text: string
+  /** `true` 代表題目敘述正確（洗牌後 shuffledCorrectIndex = 0），`false` 代表敘述錯誤（shuffledCorrectIndex = 1）。 */
   correct: boolean
   explanation: string
 }
@@ -198,7 +199,7 @@ export const QUESTION_BANK: readonly Question[] = [
     text: '比賽中球碰到網頂後落入對方場地界內，算有效球，比賽繼續。',
     correct: true,
     explanation:
-      '一般回擊時球碰網後落入對方界內是合法球，比賽繼續進行。發球碰網亦同，2021 年後 Let serve 規則已廢除。',
+      '一般回擊時球碰網後落入對方界內是合法球，比賽繼續進行。',
   },
   {
     id: 'foul-04',
