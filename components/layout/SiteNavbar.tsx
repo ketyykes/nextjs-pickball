@@ -14,6 +14,7 @@ const NAV_LINKS: readonly NavLink[] = [
 	{ href: "/", label: "首頁" },
 	{ href: "/tour", label: "完整體驗" },
 	{ href: "/scoreboard", label: "計分板" },
+	{ href: "/quiz", label: "測驗" },
 ] as const;
 
 // 全域 navbar：fixed top，捲離首頁 Hero 後切換為白底；
