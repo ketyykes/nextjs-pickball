@@ -84,4 +84,12 @@ describe('useQuiz', () => {
     expect(result.current.selectedOption).toBeNull()
     expect(result.current.questions).toHaveLength(10)
   })
+
+  it('revealed phase 呼叫 selectOption 不產生副作用', () => {
+    const { result } = renderHook(() => useQuiz())
+    act(() => { result.current.selectOption(0) })
+    act(() => { result.current.selectOption(0) }) // revealed phase，應被 guard 攔截
+    expect(result.current.answers).toHaveLength(1)
+    expect(result.current.phase).toBe('revealed')
+  })
 })

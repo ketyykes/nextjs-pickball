@@ -30,8 +30,7 @@ function buildShuffledQuestions(): ShuffledQuestion[] {
 		const indices = shuffleArray([...mc.options.keys()]);
 		const shuffledOptions = indices.map((i) => mc.options[i]);
 		const shuffledCorrectIndex = indices.indexOf(mc.correctIndex);
-		const { correctIndex: _unused, ...rest } = mc;
-		void _unused;
+		const { correctIndex: _correctIndex, ...rest } = mc;
 		return { ...rest, options: shuffledOptions, shuffledCorrectIndex };
 	});
 }
@@ -72,13 +71,15 @@ export function useQuiz(): UseQuizReturn {
 
 	function selectOption(index: number) {
 		if (state.phase !== "answering") return;
-		const isCorrect = index === state.questions[state.currentIndex].shuffledCorrectIndex;
-		setState((s) => ({
-			...s,
-			phase: "revealed",
-			selectedOption: index,
-			answers: [...s.answers, isCorrect],
-		}));
+		setState((s) => {
+			const isCorrect = index === s.questions[s.currentIndex].shuffledCorrectIndex;
+			return {
+				...s,
+				phase: "revealed",
+				selectedOption: index,
+				answers: [...s.answers, isCorrect],
+			};
+		});
 	}
 
 	function nextQuestion() {
@@ -93,7 +94,7 @@ export function useQuiz(): UseQuizReturn {
 	}
 
 	function restart() {
-		setState(createInitialState());
+		setState(createInitialState);
 	}
 
 	return {
