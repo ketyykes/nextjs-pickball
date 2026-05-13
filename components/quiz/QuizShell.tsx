@@ -47,7 +47,7 @@ export function QuizShell() {
 				question={currentQuestion}
 				questionNumber={currentIndex + 1}
 				total={total}
-				phase={phase === "answering" ? "answering" : "revealed"}
+				phase={phase}
 				selectedOption={selectedOption}
 				onSelect={selectOption}
 				onNext={nextQuestion}

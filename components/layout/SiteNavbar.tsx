@@ -18,7 +18,7 @@ const NAV_LINKS: readonly NavLink[] = [
 ] as const;
 
 // 全域 navbar：fixed top，捲離首頁 Hero 後切換為白底；
-// 在首頁以外的路由（/tour、/scoreboard）一律白底樣式。
+// 在首頁以外的路由（/tour、/scoreboard、/quiz）一律白底樣式。
 export function SiteNavbar() {
 	const pathname = usePathname();
 	const isHome = pathname === "/";
