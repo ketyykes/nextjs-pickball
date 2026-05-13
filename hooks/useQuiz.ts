@@ -70,8 +70,9 @@ export function useQuiz(): UseQuizReturn {
 	const [state, setState] = useState<QuizState>(createInitialState);
 
 	function selectOption(index: number) {
-		if (state.phase !== "answering") return;
+		// guard 必須讀 updater 內最新的 s.phase，避免同一 render 的 closure 連呼時漏擋。
 		setState((s) => {
+			if (s.phase !== "answering") return s;
 			const isCorrect = index === s.questions[s.currentIndex].shuffledCorrectIndex;
 			return {
 				...s,
@@ -83,14 +84,17 @@ export function useQuiz(): UseQuizReturn {
 	}
 
 	function nextQuestion() {
-		if (state.phase !== "revealed") return;
-		const isLast = state.currentIndex === state.questions.length - 1;
-		setState((s) => ({
-			...s,
-			currentIndex: isLast ? s.currentIndex : s.currentIndex + 1,
-			phase: isLast ? "finished" : "answering",
-			selectedOption: null,
-		}));
+		// guard 與 isLast 一起搬進 updater，確保決策依據是最新的 s 而非 closure 快照。
+		setState((s) => {
+			if (s.phase !== "revealed") return s;
+			const isLast = s.currentIndex === s.questions.length - 1;
+			return {
+				...s,
+				currentIndex: isLast ? s.currentIndex : s.currentIndex + 1,
+				phase: isLast ? "finished" : "answering",
+				selectedOption: null,
+			};
+		});
 	}
 
 	function restart() {

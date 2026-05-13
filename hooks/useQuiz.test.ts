@@ -92,4 +92,28 @@ describe('useQuiz', () => {
     expect(result.current.answers).toHaveLength(1)
     expect(result.current.phase).toBe('revealed')
   })
+
+  // 防 stale closure：同一 render 的 closure 內連續呼叫，
+  // guard 必須能擋下第二次（無論 guard 寫在外層 closure 或 setState updater 內）。
+  it('同一 closure 內連呼 selectOption 兩次應只記錄一次答案', () => {
+    const { result } = renderHook(() => useQuiz())
+    act(() => {
+      result.current.selectOption(0)
+      result.current.selectOption(1) // 同一 closure，phase 尚未 re-render 為 revealed
+    })
+    expect(result.current.answers).toHaveLength(1)
+    expect(result.current.selectedOption).toBe(0)
+    expect(result.current.phase).toBe('revealed')
+  })
+
+  it('同一 closure 內連呼 nextQuestion 兩次應只前進一題', () => {
+    const { result } = renderHook(() => useQuiz())
+    act(() => { result.current.selectOption(0) })
+    act(() => {
+      result.current.nextQuestion()
+      result.current.nextQuestion() // 同一 closure，phase 尚未 re-render 為 answering
+    })
+    expect(result.current.currentIndex).toBe(1)
+    expect(result.current.phase).toBe('answering')
+  })
 })
