@@ -17,6 +17,11 @@ export type TrueFalseQuestion = {
 
 export type Question = MultipleChoiceQuestion | TrueFalseQuestion
 
+/**
+ * 洗牌後的題目。
+ * - `multiple-choice`：選項已 Fisher-Yates 洗牌，`shuffledCorrectIndex` 為洗牌後正確選項的索引。
+ * - `true-false`：選項固定為 `["正確", "錯誤"]`（index 0 / 1），`shuffledCorrectIndex` 為 0（答案為正確）或 1（答案為錯誤）。
+ */
 export type ShuffledQuestion = (
   | Omit<MultipleChoiceQuestion, 'correctIndex'>
   | TrueFalseQuestion
@@ -109,10 +114,10 @@ export const QUESTION_BANK: readonly Question[] = [
   {
     id: 'serve-04',
     type: 'true-false',
-    text: '發球時球碰到網頂後落入正確發球區，算讓球（Let），可重新發球。',
+    text: '依 2021 年後的官方規則，發球時球碰到網頂後落入正確發球區，算有效球，比賽繼續。',
     correct: true,
     explanation:
-      '發球碰網後落入正確區域為讓球（Let），發球員可免受懲罰重新發球，不算失分也不算失誤。',
+      'USA Pickleball 自 2021 年 1 月起廢除讓球（Let serve）規則，發球碰網後落入正確區域視為有效球，比賽繼續，不再重新發球。',
   },
   {
     id: 'serve-05',
@@ -193,7 +198,7 @@ export const QUESTION_BANK: readonly Question[] = [
     text: '比賽中球碰到網頂後落入對方場地界內，算有效球，比賽繼續。',
     correct: true,
     explanation:
-      '一般回擊時球碰網後落入對方界內是合法球（有別於發球的讓球規則），比賽繼續進行。',
+      '一般回擊時球碰網後落入對方界內是合法球，比賽繼續進行。發球碰網亦同，2021 年後 Let serve 規則已廢除。',
   },
   {
     id: 'foul-04',
